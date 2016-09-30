@@ -1,0 +1,15 @@
+DEPENDENCIAS:
+
+- Twython: https://twython.readthedocs.io/en/latest/
+- Enum32: https://pypi.python.org/pypi/enum34
+- PyMongo: https://pypi.python.org/pypi/pymongo
+
+ANTES DE EJEUTAR:
+- Asegurarse de contar con las dependencias instaladas
+- Crear el directorio para guardar los logfile del streamer, ruta por defecto: /var/logs/twitter_streamer
+- Configurar una API Key para la API de Twitter en el archivo de configuración del streamer: config/settings.py
+- Configurar el data source para guardar los tweets: config/data_bases.py
+
+EJECUCION:
+python twitter_streamer.py
+
