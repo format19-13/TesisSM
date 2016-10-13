@@ -1,1 +1,4 @@
 # TesisVT
+
+ipython notebook
+python
