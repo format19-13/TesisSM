@@ -38,53 +38,28 @@ class TwitterStreamer(Twython):
 
   
     def run(self):
-
         try:
-               
-            output=self.lookup_user(screen_name=SCREEN_NAMES1)
-            print "USUARIOS GUARDADOS EN BD:"
-            for user in output:
-                print user['screen_name']
-                tweets= self.get_user_timeline(screen_name=user['screen_name'], count=3000)
-                user['tweets']=tweets
-                save_user(user)
-            time.sleep(900)
 
-            output=self.lookup_user(screen_name=SCREEN_NAMES2)
-            print "USUARIOS GUARDADOS EN BD:"
-            for user in output:
-                print user['screen_name']
-                tweets= self.get_user_timeline(screen_name=user['screen_name'], count=3000)
-                user['tweets']=tweets
-                save_user(user)
-            time.sleep(900)
+            screen_names_lst=SCREEN_NAMES.split(",")
+            screenName='"'
+            for x in range(1, len(screen_names_lst)+1):
+                if len(screenName)==1 :
+                    screenName=screenName+screen_names_lst[x-1]
+                else: 
+                    screenName=screenName+","+screen_names_lst[x-1]
 
-            output=self.lookup_user(screen_name=SCREEN_NAMES3)
-            print "USUARIOS GUARDADOS EN BD:"
-            for user in output:
-                print user['screen_name']
-                tweets= self.get_user_timeline(screen_name=user['screen_name'], count=3000)
-                user['tweets']=tweets
-                save_user(user)
-            time.sleep(900)
+                if (x % 50==0):
+                    screenName=screenName + '"'   
+                    output=self.lookup_user(screen_name=screenName)
+                    print "USUARIOS GUARDADOS EN BD:"
+                    for user in output:
+                        print user['screen_name']
+                        tweets= self.get_user_timeline(screen_name=user['screen_name'], count=3000)
+                        user['tweets']=tweets
+                        save_user(user)
+                    screenName='"'
+                    time.sleep(900)
 
-            output=self.lookup_user(screen_name=SCREEN_NAMES4)
-            print "USUARIOS GUARDADOS EN BD:"
-            for user in output:
-                print user['screen_name']
-                tweets= self.get_user_timeline(screen_name=user['screen_name'], count=3000)
-                user['tweets']=tweets
-                save_user(user)
-            time.sleep(900)
-
-            output=self.lookup_user(screen_name=SCREEN_NAMES5)
-            print "USUARIOS GUARDADOS EN BD:"
-            for user in output:
-                print user['screen_name']
-                tweets= self.get_user_timeline(screen_name=user['screen_name'], count=3000)
-                user['tweets']=tweets
-                save_user(user)
-            time.sleep(900)
         except ChunkedEncodingError as e:
             msg = "ChunkedEncodingError in execution of the search track processor. " + str(e)
             self.module_logger.debug(msg)

@@ -15,7 +15,7 @@ class MongoDBUtils(object):
     def __init__(self):
         # Cliente a MongoDB
         self.mongo_client = pymongo.MongoClient(host=MONGO_DB_HOST, port=MONGO_DB_PORT)
-        self.mongo_client.admin.authenticate(MONGO_DB_USER, MONGO_DB_PASSWORD, mechanism='SCRAM-SHA-1')
+        self.mongo_client.admin.authenticate(MONGO_DB_USER, MONGO_DB_PASSWORD, mechanism='MONGODB-CR')
         self.logger = logging.getLogger(LOGGING_ROOT_NAME + '.data_access')
         self.logger.info('Initializing module.')
 
