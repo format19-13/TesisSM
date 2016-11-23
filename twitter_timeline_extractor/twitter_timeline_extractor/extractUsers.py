@@ -41,16 +41,19 @@ class TwitterStreamer(Twython):
         try:
 
             screen_names_lst=SCREEN_NAMES.split(",")
-            screenName='"'
-            for x in range(1, len(screen_names_lst)+1):
-                if len(screenName)==1 :
-                    screenName=screenName+screen_names_lst[x-1]
-                else: 
-                    screenName=screenName+","+screen_names_lst[x-1]
+            screenName=''
 
-                if (x % 50==0):
-                    screenName=screenName + '"'   
+            for x in range(0, len(screen_names_lst)):
+
+                if len(screenName)==1 :
+                    screenName=screenName+screen_names_lst[x]
+                else: 
+                    screenName=screenName+","+screen_names_lst[x]
+
+                if ((x % 50==0 and x != 0) or (len(screen_names_lst)<50 and x+1==len(screen_names_lst))):
+
                     output=self.lookup_user(screen_name=screenName)
+
                     print "USUARIOS GUARDADOS EN BD:"
                     for user in output:
                         print user['screen_name']
@@ -58,7 +61,8 @@ class TwitterStreamer(Twython):
                         user['tweets']=tweets
                         save_user(user)
                     screenName='"'
-                    time.sleep(900)
+                    if len(screen_names_lst)>=50:
+                        time.sleep(900)
 
         except ChunkedEncodingError as e:
             msg = "ChunkedEncodingError in execution of the search track processor. " + str(e)
