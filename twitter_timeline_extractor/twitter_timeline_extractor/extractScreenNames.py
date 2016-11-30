@@ -5,7 +5,7 @@ import string
 import itertools as IT
 import io
 
-path = '/home/vero/Dropbox/TesisVT/pan16-author-profiling-training-dataset-2016-04-25/pan16-author-profiling-training-dataset-english-2016-04-25'
+path = '/home/vero/Dropbox/TesisVT/pan16-author-profiling-training-dataset-2016-04-25/pan16-author-profiling-training-dataset-spanish-2016-04-25'
 
 pathConfig= '/home/vero/proyectos/TesisVT/twitter_timeline_extractor/twitter_timeline_extractor/configs/settings.py'
 screen_names=''

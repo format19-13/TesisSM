@@ -14,7 +14,9 @@ import traceback
 import logging
 import sys
 import time
-
+import pymongo
+from pymongo import MongoClient
+import imp
 
 def save_user(data):
     db_access = MongoDBUtils()
@@ -50,7 +52,7 @@ class TwitterStreamer(Twython):
                 else: 
                     screenName=screenName+","+screen_names_lst[x]
 
-                if ((x % 50==0 and x != 0) or (len(screen_names_lst)<50 and x+1==len(screen_names_lst))):
+                if ((x % 50==0 and x != 0) or (x+1==len(screen_names_lst))):
 
                     output=self.lookup_user(screen_name=screenName)
 
@@ -59,8 +61,22 @@ class TwitterStreamer(Twython):
                         print user['screen_name']
                         tweets= self.get_user_timeline(screen_name=user['screen_name'], count=3000)
                         user['tweets']=tweets
+                        #user['ageRange']= 
+                        #self.getAgeFromFacebook(user)
+                        ageRange=""
+                        try:
+                            urls= user["entities"]["url"]["urls"]
+                            for url in urls:
+                                if "facebook" in url["expanded_url"]:
+                                    fbk_url= url["expanded_url"]
+                                    fbk_username=fbk_url.split("facebook.com")[1].split("/")[1]
+                                    print fbk_username
+                                    foo = imp.load_source('scrapingFacebook', '/home/vero/proyectos/TesisVT/facebook_extractor/scrapingFacebook.py')
+                                    ageRange= foo.getEdad(fbk_username)
+                        except:
+                            pass ##no tiene facebook acct asociada
                         save_user(user)
-                    screenName='"'
+                    screenName=''
                     if len(screen_names_lst)>=50:
                         time.sleep(900)
 
@@ -77,7 +93,23 @@ class TwitterStreamer(Twython):
             self.module_logger.debug(msg)
             self.module_logger.debug(traceback.format_exc())
             self.module_logger.debug("Resetting streamer...")
+    
+    def getAgeFromFacebook(user):
+        ageRange=""
+        try:
+            urls= user["entities"]["url"]["urls"]
+            for url in urls:
+                if "facebook" in url["expanded_url"]:
+                    fbk_url= url["expanded_url"]
+                    fbk_username=fbk_url.split("facebook.com")[1].split("/")[1]
+                    print fbk_username
+                    foo = imp.load_source('scrapingFacebook', '/home/vero/proyectos/TesisVT/facebook_extractor/scrapingFacebook.py')
+                    ageRange= foo.getEdad(fbk_username)
+        except:
+            pass ##no tiene facebook acct asociada
 
+        return ageRange
+ 
 
 def main():
     print 'Process start...'

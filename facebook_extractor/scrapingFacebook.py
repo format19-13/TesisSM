@@ -7,7 +7,7 @@ from selenium.webdriver.support import ui
 from selenium.webdriver.common.keys import Keys
 import requests
 
-def getEdad(user):
+def getFnac(user):
     url='https://www.facebook.com'
     urlInfoSection=url + '/'+user+ '/about?section=contact-info&pnref=about'
 
@@ -37,13 +37,13 @@ def getEdad(user):
     driver.get(urlInfoSection)
 
     section=driver.find_elements_by_id("pagelet_basic")
-    salida=""
+    salida=0
 
     for i in range(0, len(section)):
 
     	aux= section[i].text
         if "o de nacimiento" in aux:
-            salida=aux.split("o de nacimiento")[1][:5] 
+            salida=int(aux.split("o de nacimiento")[1][:5]) 
         else:
             try:
     	        sectionXPath = './/li[@data-privacy-fbid="8787510733"]'
@@ -56,11 +56,31 @@ def getEdad(user):
     	            for x in range(0, len(lstDivs)):
                         fnacText= lstDivs[x].text
                         if "Fecha de nacimiento" in fnacText:
-                            salida=salida + lstDivs[x+1].text
+                            aux=lstDivs[x+1].text.split("de")
+                            if len(aux)==3:
+                            	salida=int(aux[2])
+
             except:
                 return "error"
+    print salida            
     return salida    
-#print driver.page_source
 
-print getEdad("mcopes")
-print getEdad("100014311837101")
+def getEdad(user):
+    fnac=getFnac(user)
+    edad=2016-fnac
+    rango=''
+    if edad>0:
+        if edad<=24:
+            rango="18-24"
+        elif edad <=34:
+            rango="25-34"
+        elif edad <=49:
+            rango="35-49"
+        elif edad <=64:
+            rango="50-64"
+        else:
+            rango="65-xx"
+    return rango
+
+#getEdad("mcopes")            
+#getEdad("100014311837101")
