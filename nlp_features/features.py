@@ -22,7 +22,7 @@ def save_user(data):
     db_access = MongoDBUtils()
     db_access.save_user(data)
 
-class TwitterStreamer(Twython):
+class Features():
 
     def __init__(self, source):
 
@@ -122,7 +122,7 @@ class TwitterStreamer(Twython):
 
 def main():
     print 'Process start...'
-    processor = TwitterStreamer(source=SOURCE)
+    processor = Features()
     processor.run()
     print 'Exiting now.'
 
