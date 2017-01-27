@@ -1,15 +1,17 @@
 #!/usr/bin/python
 # -*- coding: utf8 -*-
-import os, sys
-sys.path.append(os.path.abspath(os.pardir))
 
-from twitter_timeline_extractor.configs.settings import *
-from requests.exceptions import ChunkedEncodingError
-from data_access.mongo_utils import MongoDBUtils
-from twython import Twython
-from threading import Thread
-from Queue import Queue
-import streamer_logging
+import sys
+sys.path.append('/home/vero/proyectos/TesisVT/twitter_streamer_extractor/twitter_streamer_extractor/data_access')
+from mongo_utils import MongoDBUtils
+
+sys.path.append('/home/vero/proyectos/TesisVT/twitter_streamer_extractor/twitter_streamer_extractor/configs')
+from settings import *
+from data_bases import *
+
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.datasets import fetch_20newsgroups
+
 import traceback
 import logging
 import sys
@@ -18,112 +20,29 @@ import pymongo
 from pymongo import MongoClient
 import imp
 
-def save_user(data):
-    db_access = MongoDBUtils()
-    db_access.save_user(data)
 
 class Features():
+    db_access = MongoDBUtils()
+    users_dicc = db_access.get_users()
 
-    def __init__(self, source):
-
-        self.name = 'twitter_streamer'
-        self.count = 0
-
-        # Logger
-        streamer_logging.init_logger(root_name=LOGGING_ROOT_NAME, level='DEBUG', log_base_path=LOGGING_BASE_PATH)
-        self.module_logger = logging.getLogger(LOGGING_ROOT_NAME + '.streamer')
-        self.module_logger.info("Starting twitter streamer...")
-
-        Twython.__init__(self, TWITTER_ACCESS_KEYS["app_key"], TWITTER_ACCESS_KEYS["app_secret"],
-                                 TWITTER_ACCESS_KEYS["app_access_token"],
-                                 TWITTER_ACCESS_KEYS["app_access_token_secret"])
-
-  
-    def run(self):
-        try:
-
-            screen_names_lst=SCREEN_NAMES.split(",")
-            screenName=''
-
-            for x in range(0, len(screen_names_lst)):
-
-                if len(screenName)==1 :
-                    screenName=screenName+screen_names_lst[x]
-                else: 
-                    screenName=screenName+","+screen_names_lst[x]
-
-                if ((x % 50==0 and x != 0) or (x+1==len(screen_names_lst))):
-
-                    output=self.lookup_user(screen_name=screenName)
-
-                    print "USUARIOS GUARDADOS EN BD:"
-                    for user in output:
-                        print user['screen_name']
-                        tweets= self.get_user_timeline(screen_name=user['screen_name'], count=3000)
-                        user['tweets']=tweets
-                        #user['ageRange']= 
-                        #self.getAgeFromFacebook(user)
-                        ageRange=""
-                        user["linkedin"] = False 
-                        user["instagram"] = False
-                        user["snapchat"] = False 
-                        try:
-                            urls= user["entities"]["url"]["urls"]
-                            for url in urls:
-                                if "facebook" in url["expanded_url"]:
-                                    fbk_url= url["expanded_url"]
-                                    fbk_username=fbk_url.split("facebook.com")[1].split("/")[1]
-                                    foo = imp.load_source('scrapingFacebook', '/home/vero/proyectos/TesisVT/facebook_extractor/scrapingFacebook.py')
-                                    ageRange= foo.getEdad(fbk_username)
-                                    user["age"]=ageRange
-                                
-                                if "linkedin" in url["expanded_url"] : user["linkedin"] = True 
-                                if "instagram" in url["expanded_url"]: user["instagram"] = True 
-                                if "snapchat" in url["expanded_url"] : user["snapchat"] = True 
-                               
-                        except:
-                            pass ##no tiene facebook acct asociada
-
-                        save_user(user)
-                    screenName=''
-                    if len(screen_names_lst)>=50:
-                        time.sleep(900)
-
-        except ChunkedEncodingError as e:
-            msg = "ChunkedEncodingError in execution of the search track processor. " + str(e)
-            self.module_logger.debug(msg)
-            self.module_logger.debug(traceback.format_exc())
-            self.module_logger.debug("Resetting streamer...")
-        except Exception as e:
-            print str(e)
-            self.module_logger.rollback()
-            self.module_logger.close()
-            msg = "Unexpected error in execution of the search track processor. " + str(e)
-            self.module_logger.debug(msg)
-            self.module_logger.debug(traceback.format_exc())
-            self.module_logger.debug("Resetting streamer...")
+    #for user in list(users_dicc):
+     #   print user
+    #aux=list(users_dicc)
     
-    def getAgeFromFacebook(user):
-        ageRange=""
-        try:
-            urls= user["entities"]["url"]["urls"]
-            for url in urls:
-                if "facebook" in url["expanded_url"]:
-                    fbk_url= url["expanded_url"]
-                    fbk_username=fbk_url.split("facebook.com")[1].split("/")[1]
-                    print fbk_username
-                    foo = imp.load_source('scrapingFacebook', '/home/vero/proyectos/TesisVT/facebook_extractor/scrapingFacebook.py')
-                    ageRange= foo.getEdad(fbk_username)
-        except:
-            pass ##no tiene facebook acct asociada
+    categories = ['alt.atheism', 'soc.religion.christian','comp.graphics', 'sci.med']
+    twenty_train = fetch_20newsgroups(subset='train', categories=categories, shuffle=True, random_state=42)
+    
+    print twenty_train.data[0]
 
-        return ageRange
- 
+    print twenty_train.target
+    print len(twenty_train.target)
+    print len(twenty_train.data)
+    print max(twenty_train.target)
+    print min(twenty_train.target)
 
 def main():
     print 'Process start...'
     processor = Features()
-    processor.run()
     print 'Exiting now.'
 
 if __name__ == "__main__":

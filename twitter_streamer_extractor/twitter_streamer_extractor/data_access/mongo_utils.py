@@ -1,10 +1,13 @@
 #!/usr/bin/python
 # -*- coding: utf8 -*-
 
-# __author__ = 'eviotti'
 
-from twitter_streamer_extractor.configs.data_bases import *
-from twitter_streamer_extractor.configs.settings import *
+import sys
+sys.path.append('/home/vero/proyectos/TesisVT/twitter_streamer_extractor/twitter_streamer_extractor/configs')
+from settings import *
+from data_bases import *
+
+
 from pymongo.errors import PyMongoError, ConnectionFailure
 import pymongo
 import logging
@@ -35,6 +38,21 @@ class MongoDBUtils(object):
             document["track_terms"] = True if EnumSource.TRACKTERMS in source else False
 
             col.insert_one(document)
+
+        except ConnectionFailure as e:
+            self.logger.error('Mongo connection error', exc_info=True)
+        except PyMongoError as e:
+            self.logger.error('Error while trying to sace user account', exc_info=True)
+
+    def get_users(self):
+
+        try:
+
+            # Obtiene una referencia a la instancia de la DB
+            db = self.mongo_client[MONGO_DB_NAME]
+            # Obtiene el ObjectID Mongo del perfil del data source para el usuario
+            col = db[DB_COL_USERS]
+            return col.find()
 
         except ConnectionFailure as e:
             self.logger.error('Mongo connection error', exc_info=True)
