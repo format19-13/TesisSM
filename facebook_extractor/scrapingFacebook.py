@@ -82,5 +82,5 @@ def getEdad(user):
             rango="65-xx"
     return rango
 
-#getEdad("mcopes")            
+print getEdad("mcopes")            
 #getEdad("100014311837101")

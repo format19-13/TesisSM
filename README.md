@@ -1,4 +1,4 @@
 # TesisVT
 
-ipython notebook
-python
+#Para iniciar el servicio mongo
+brew services start mongodb 

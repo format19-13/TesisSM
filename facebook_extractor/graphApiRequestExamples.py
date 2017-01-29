@@ -1,6 +1,5 @@
 #from facegraph import Graph
 #g = Graph("9f6b035a6a70c37fd01c8027366f1f6a") #  Access token is optional.
-from facegraph import Graph
 
 
 from facepy import GraphAPI
@@ -29,3 +28,4 @@ print graph.search(term='veronica tortorella',type='user')
 
 #PRUEBO CON LIBRERIA REQUESTS
 print requests.get('https://graph.facebook.com/v2.2/search?q=coffee&type=place&center=37.76,-122.427&distance=1000&access_token=EAACEdEose0cBAGZBGvUPU4jjSMbTXtKhkhIeyrVGyyzQcXEVoBjoZCnnbzuK0Ug8G52ttXvMOMw8tgODPdayYrC2S0TcE7KtFHOe69cRjvWaAIuwDXpzDD8HZBp79WZAQLi3PKZAwrIYzrv85PrH5kGgaIcWQ7uao6vft4gPf7AZDZD').json()
+
