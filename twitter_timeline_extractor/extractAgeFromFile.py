@@ -38,8 +38,10 @@ with open(DIR_PREFIX+"/Dropbox/TesisVT/pan16-author-profiling-training-dataset-2
         with open(DIR_PREFIX+"/Dropbox/TesisVT/pan16-author-profiling-training-dataset-2016-04-25/pan16-author-profiling-training-dataset-spanish-2016-04-25/"+user_id+".xml") as g:
         
             e = XML.parse(g).getroot()
-            screen_name=string.replace(e.attrib['url'], 'https://twitter.com/', '')    
+            screen_name=string.replace(e.attrib['url'], 'https://twitter.com/', '').lower()    
             print screen_name
+            print age_range
+            print '------'
             set_age(screen_name,age_range)
 
 

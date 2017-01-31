@@ -68,4 +68,3 @@ class MongoDBUtils(object):
             db = self.mongo_client[MONGO_DB_NAME]
             col = db[DB_COL_USERS]
             col.update({'screen_name' : screen_name }, {'$set' : {'age' : age }})
-
