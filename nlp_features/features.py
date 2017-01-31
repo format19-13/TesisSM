@@ -27,7 +27,7 @@ import sys
 import os
 import numpy as np
 import scipy.sparse as sp
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 
 from sklearn.datasets import load_mlcomp
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -55,18 +55,21 @@ class Features():
 
     # Load the training set
     for user in list(users_dicc):
+    	tweetsConc=''
         for tweet in user['tweets']:
-            try:
-                if (cont<45730):
-                    train_target.append(user['age'])
-                    train_data.append(tweet['text'])
-                else:
-                     test_data.append(tweet['text'])
-                     test_result.append(user['age'])
-                cont= cont+1
-            except:
-                print("Sin edad: " + user['screen_name']) 
-    print test_result
+            tweetsConc = tweetsConc + tweet['text']
+        try:
+            if (cont<200):
+                train_target.append(user['age'])
+                train_data.append(tweetsConc)
+            else:
+                test_data.append(tweetsConc)
+                test_result.append(user['age'])
+            cont= cont+1
+        except:
+            print("Sin edad: " + user['screen_name']) 
+
+    #print test_result
     print("Extracting features from the dataset using a sparse vectorizer")
     t0 = time()
     vectorizer = TfidfVectorizer(encoding='latin1')
@@ -82,8 +85,6 @@ class Features():
     y_test = test_target
     print("done in %fs" % (time() - t0))
     print("n_samples: %d, n_features: %d" % X_test.shape)
-
-    print X_test
 
     def benchmark(clf_class, params, name,X_train,y_train,X_test,y_test,test_target):
         print("parameters:", params)
@@ -128,7 +129,7 @@ class Features():
 
     benchmark(MultinomialNB, parameters, 'MultinomialNB',X_train,y_train,X_test,y_test,test_target)
 
-    plt.show()
+    #plt.show()
 
 def main():
     print('Process start...')
