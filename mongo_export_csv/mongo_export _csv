@@ -1,0 +1,58 @@
+mongo
+use tesisdb
+
+ mr = db.runCommand({   "mapreduce" : "users",     "map" : function() {       for (var key in this) { emit(key, null); }     },     "reduce" : function(key, stuff) { return null; },     "out": "users" + "_keys"   })
+
+db[mr.result].distinct("_id")
+
+Devuelve los fields:
+    "_id",
+	"age",
+	"contributors_enabled",
+	"created_at",
+	"default_profile",
+	"default_profile_image",
+	"description",
+	"entities",
+	"favourites_count",
+	"follow_request_sent",
+	"followers_count",
+	"following",
+	"friends_count",
+	"geo_enabled",
+	"has_extended_profile",
+	"id",
+	"id_str",
+	"instagram",
+	"is_translation_enabled",
+	"is_translator",
+	"lang",
+	"linkedin",
+	"listed_count",
+	"location",
+	"name",
+	"notifications",
+	"profile_background_color",
+	"profile_background_image_url",
+	"profile_background_image_url_https",
+	"profile_background_tile",
+	"profile_banner_url",
+	"profile_image_url",
+	"profile_image_url_https",
+	"profile_link_color",
+	"profile_sidebar_border_color",
+	"profile_sidebar_fill_color",
+	"profile_text_color",
+	"profile_use_background_image",
+	"protected",
+	"screen_name",
+	"snapchat",
+	"status",
+	"statuses_count",
+	"time_zone",
+	"translator_type",
+	"tweets",
+	"url",
+	"utc_offset",
+	"verified"
+
