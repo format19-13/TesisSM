@@ -3,7 +3,7 @@
 
 import os,sys
 import os.path
-
+from pandas import DataFrame
 sys.path.append(os.path.abspath(os.pardir))
 from configs.settings import *
 from configs.data_bases import *
@@ -68,3 +68,25 @@ class MongoDBUtils(object):
             db = self.mongo_client[MONGO_DB_NAME]
             col = db[DB_COL_USERS]
             col.update({'screen_name' : screen_name }, {'$set' : {'age' : age }})
+
+    def get_tweetsText(self):
+
+        try:
+            df = DataFrame(columns=('screen_name', 'tweets', 'age'))
+            # Obtiene una referencia a la instancia de la DB
+            db = self.mongo_client[MONGO_DB_NAME]
+            # Obtiene el ObjectID Mongo del perfil del data source para el usuario
+            col = db[DB_COL_USERS]
+            count=0
+            for user in col.find(): #para cada usuario
+                tweetText=""
+                for tweet in  user['tweets']:
+                    tweetText= tweetText +' '+ tweet['text']   
+                df.loc[count] = [user['screen_name'],tweetText,35]
+                count += 1
+            return df
+
+        except ConnectionFailure as e:
+            self.logger.error('Mongo connection error', exc_info=True)
+        except PyMongoError as e:
+            self.logger.error('Error while trying to sace user account', exc_info=True)
