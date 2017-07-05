@@ -58,9 +58,10 @@ class TwitterStreamer(Twython):
 
                     print "USUARIOS GUARDADOS EN BD:"
                     for user in output:
-                        print user['screen_name']
                         tweets= self.get_user_timeline(screen_name=user['screen_name'], count=3000)
                         user['tweets']=tweets
+                        user['screen_name']= user['screen_name'].lower()
+                        print user['screen_name']
                         #user['ageRange']= 
                         #self.getAgeFromFacebook(user)
                         ageRange=""
@@ -71,6 +72,7 @@ class TwitterStreamer(Twython):
                             urls= user["entities"]["url"]["urls"]
                             for url in urls:
                                 if "facebook" in url["expanded_url"]:
+                                    print "tiene facebook"
                                     fbk_url= url["expanded_url"]
                                     fbk_username=fbk_url.split("facebook.com")[1].split("/")[1]
                                     foo = imp.load_source('scrapingFacebook', DIR_PREFIX+'/proyectos/TesisVT/facebook_extractor/scrapingFacebook.py')
@@ -82,11 +84,13 @@ class TwitterStreamer(Twython):
                                 if "snapchat" in url["expanded_url"] : user["snapchat"] = True 
                                
                         except:
+                            print "####NO TIENE EDAD EN FACEBOOK###"
                             pass ##no tiene facebook acct asociada
-
+                        print "SE SALVO USUARIO"
                         save_user(user)
                     screenName=''
                     if len(screen_names_lst)>=50:
+                        print "esperando"
                         time.sleep(900)
 
         except ChunkedEncodingError as e:

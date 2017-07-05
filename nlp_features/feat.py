@@ -17,6 +17,9 @@ users_df = db_access.get_tweetsText()
 train_data=users_df.sample(frac=0.9,random_state=200)
 test_data=users_df.drop(train_data.index)
 
+
+print test_data
+
 count_vect = CountVectorizer() #Para hacer bag of words
 X_train_counts = count_vect.fit_transform(train_data.tweets)
 # fit_transform() does two functions: First, it fits the model
@@ -62,6 +65,9 @@ forest = RandomForestClassifier(n_estimators = 100)
 # features and the sentiment labels as the response variable
 #
 # This may take a few minutes to run
+
+print train_data["age"]
+
 forest = forest.fit( train_data_features, train_data["age"] )
 
 # ********* APLICO RANDOM FOREST SOBRE LA DATA DE TEST *********#
@@ -77,7 +83,10 @@ result = forest.predict(test_data_features)
 
 # Copy the results to a pandas dataframe with an "id" column and
 # a "sentiment" column
-output = pd.DataFrame( data={"id":test_data["screen_name"], "age":result} )
+print result.str.replace('\n', '')
+
+output = pd.DataFrame( data={"id":test_data["screen_name"], "age":result,"realAge":test_data["age"]})
+#print output
 
 # Use pandas to write the comma-separated output file
-output.to_csv( "Bag_of_Words_model.csv", index=False, quoting=3 )
+output.to_csv( "Bag_of_Words_model.csv", index=False)

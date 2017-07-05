@@ -25,13 +25,13 @@ for filename in glob.glob(os.path.join(path, '*.xml')):
         raise 
 
     if (len(screen_names)>0):
-        screen_names=screen_names+','+ string.replace(e.attrib['url'], 'https://twitter.com/', '')
+        screen_names=screen_names+','+ string.replace(e.attrib['url'], 'https://twitter.com/', '').lower()    
     else:
-        screen_names=string.replace(e.attrib['url'], 'https://twitter.com/', '')
+        screen_names=string.replace(e.attrib['url'], 'https://twitter.com/', '').lower()    
 
 
 f = open(pathConfig,'a')
 
-f.write('SCREEN_NAMES='+'"'+screen_names+'"'+'\n') 
+f.write('SCREEN_NAMES='+'"'+screen_names.lower()+'"'+'\n') 
 
 f.close() 
