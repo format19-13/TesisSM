@@ -42,6 +42,6 @@ with open(DIR_PREFIX+"/Dropbox/TesisVT/pan16-author-profiling-training-dataset-2
             print screen_name
             print age_range
             print '------'
-            set_age(screen_name,age_range)
+            set_age(screen_name,string.replace(age_range, '\n', ''))
 
 

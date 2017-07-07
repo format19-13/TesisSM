@@ -10,6 +10,14 @@ from data_access.mongo_utils import MongoDBUtils
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.ensemble import RandomForestClassifier
 
+# Simple WordCloud
+from os import path
+from scipy.misc import imread
+import matplotlib.pyplot as plt
+import random
+
+from wordcloud import WordCloud, STOPWORDS
+
 ## *********ARMO EL DATASET DE TRAIN Y EL DE TEST *********
 db_access = MongoDBUtils()
 users_df = db_access.get_tweetsText()
@@ -83,7 +91,6 @@ result = forest.predict(test_data_features)
 
 # Copy the results to a pandas dataframe with an "id" column and
 # a "sentiment" column
-print result.str.replace('\n', '')
 
 output = pd.DataFrame( data={"id":test_data["screen_name"], "age":result,"realAge":test_data["age"]})
 #print output
