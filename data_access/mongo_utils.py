@@ -82,8 +82,8 @@ class MongoDBUtils(object):
                 tweetText=""
                 for tweet in  user['tweets']:
                     tweetText= tweetText +' '+ tweet['text']
-                print user['screen_name']
-                print user['age']
+                #print user['screen_name']
+                #print user['age']
                 df.loc[count] = [user['screen_name'],tweetText,user['age'] ]
                 count += 1
             return df

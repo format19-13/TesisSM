@@ -9,14 +9,13 @@ from configs.settings import *
 from data_access.mongo_utils import MongoDBUtils
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.ensemble import RandomForestClassifier
-
-# Simple WordCloud
-from os import path
-from scipy.misc import imread
-import matplotlib.pyplot as plt
-import random
-
-from wordcloud import WordCloud, STOPWORDS
+from sklearn import svm, datasets
+from sklearn.model_selection import cross_val_score
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import confusion_matrix
+from sklearn.metrics import classification_report
+from stop_words import get_stop_words
 
 ## *********ARMO EL DATASET DE TRAIN Y EL DE TEST *********
 db_access = MongoDBUtils()
@@ -25,11 +24,30 @@ users_df = db_access.get_tweetsText()
 train_data=users_df.sample(frac=0.9,random_state=200)
 test_data=users_df.drop(train_data.index)
 
+##STOPWORDS EN SPANISH, SCIKIT TRAE SOLO EN INGLES
+stopwordsSP = (get_stop_words('spanish'))
 
-print test_data
+stopwords=set()
 
-count_vect = CountVectorizer() #Para hacer bag of words
+for x in stopwordsSP:
+	x=x.encode('utf-8')
+	stopwords.add(x)
+
+##add domain stopwords
+stopwords.add("https")
+stopwords.add("co")
+stopwords.add("RT")
+
+#print test_data
+
+
+count_vect = CountVectorizer(stop_words=stopwords) #Para hacer bag of words
 X_train_counts = count_vect.fit_transform(train_data.tweets)
+
+
+print X_train_counts
+
+
 # fit_transform() does two functions: First, it fits the model
 # and learns the vocabulary; second, it transforms our training data
 # into feature vectors. The input to fit_transform should be a list of 
@@ -37,22 +55,23 @@ X_train_counts = count_vect.fit_transform(train_data.tweets)
 
 ## ********* APLICO BAG OF WORDS *********
 
-print count_vect.vocabulary_.get(u'algorithm')
-print count_vect.vocabulary_.get(u'amigos')
+#print count_vect.vocabulary_.get(u'algorithm')
+#print count_vect.vocabulary_.get(u'amigos')
 
 #scikit no trae stopwords en espanol, solo en ingles.
 # Numpy arrays are easy to work with, so convert the result to an 
 # array
 train_data_features = X_train_counts.toarray()
 
-print len(train_data) #212 users en train
+#print len(train_data) #212 users en train
 
-print train_data_features.shape 
+#print train_data_features.shape 
 #(212, 94210) --> It has 212 rows and 94210 (one for each vocabulary word).
 
 # Take a look at the words in the vocabulary
-#vocab = count_vect.get_feature_names()
-#print vocab 
+vocab = count_vect.get_feature_names()
+print vocab SACAR LAS PALABRAS QUE NO TIENEN SENTIDOOOOOOOO!!!
+
 ##Aca vemos strings raros q deberiamos eliminar ej: \u0432\u0435\u043b\u0438\u043a\u0438\u043c
 
 # Sum up the counts of each vocabulary word
@@ -74,7 +93,7 @@ forest = RandomForestClassifier(n_estimators = 100)
 #
 # This may take a few minutes to run
 
-print train_data["age"]
+#print train_data["age"]
 
 forest = forest.fit( train_data_features, train_data["age"] )
 
@@ -97,3 +116,20 @@ output = pd.DataFrame( data={"id":test_data["screen_name"], "age":result,"realAg
 
 # Use pandas to write the comma-separated output file
 output.to_csv( "Bag_of_Words_model.csv", index=False)
+
+###################################
+#******* MODEL EVALUATION *********
+###################################
+
+print 'BOW+RandomForest: ',accuracy_score(result.tolist(),test_data["age"].values.tolist()),' accuracy'
+
+clf = RandomForestClassifier(n_estimators=100)
+# 10-Fold Cross validation
+print np.mean(cross_val_score(clf, train_data_features, train_data["age"]))
+
+target_names=list(set(train_data["age"].values.tolist()))
+
+print confusion_matrix(result.tolist(),test_data["age"].values.tolist(),target_names)
+
+print(classification_report(result.tolist(),test_data["age"].values.tolist(), target_names=target_names))
+
