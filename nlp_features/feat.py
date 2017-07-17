@@ -3,6 +3,7 @@ import os,sys
 import os.path
 import numpy as np
 import pandas as pd
+import HTMLParser
 sys.path.append(os.path.abspath(os.pardir))
 from sklearn.model_selection import train_test_split
 from configs.settings import *
@@ -16,10 +17,26 @@ from sklearn.metrics import accuracy_score
 from sklearn.metrics import confusion_matrix
 from sklearn.metrics import classification_report
 from stop_words import get_stop_words
+import re
 
 ## *********ARMO EL DATASET DE TRAIN Y EL DE TEST *********
 db_access = MongoDBUtils()
 users_df = db_access.get_tweetsText()
+
+##https://www.analyticsvidhya.com/blog/2015/06/quick-guide-text-data-cleaning-python/
+##TWEETS CLEANUP
+
+#Escape HTML characters
+htmlParser= HTMLParser.HTMLParser()
+
+#Decode data
+
+for (i,row) in users_df["tweets"].iteritems():
+	result= htmlParser.unescape(row)
+	result= unicode(result.encode("utf8"), errors='ignore')
+	result= re.sub(r"http\S+", "",result)
+	row=result
+
 
 train_data=users_df.sample(frac=0.9,random_state=200)
 test_data=users_df.drop(train_data.index)
@@ -38,14 +55,16 @@ stopwords.add("https")
 stopwords.add("co")
 stopwords.add("RT")
 
-#print test_data
+#print train_data.tweets
 
 
-count_vect = CountVectorizer(stop_words=stopwords) #Para hacer bag of words
+
+
+count_vect = CountVectorizer(stop_words=stopwords,strip_accents= 'unicode') #Para hacer bag of words
 X_train_counts = count_vect.fit_transform(train_data.tweets)
 
 
-print X_train_counts
+#print X_train_counts
 
 
 # fit_transform() does two functions: First, it fits the model
@@ -70,7 +89,7 @@ train_data_features = X_train_counts.toarray()
 
 # Take a look at the words in the vocabulary
 vocab = count_vect.get_feature_names()
-print vocab SACAR LAS PALABRAS QUE NO TIENEN SENTIDOOOOOOOO!!!
+print vocab #SACAR LAS PALABRAS QUE NO TIENEN SENTIDOOOOOOOO!!!
 
 ##Aca vemos strings raros q deberiamos eliminar ej: \u0432\u0435\u043b\u0438\u043a\u0438\u043c
 
