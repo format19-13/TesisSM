@@ -28,15 +28,18 @@ users_df = db_access.get_tweetsText()
 
 #Escape HTML characters
 htmlParser= HTMLParser.HTMLParser()
+#https://github.com/myleott/ark-twokenize-py
 
 #Decode data
-
+tweets_new = []
 for (i,row) in users_df["tweets"].iteritems():
 	result= htmlParser.unescape(row)
 	result= unicode(result.encode("utf8"), errors='ignore')
 	result= re.sub(r"http\S+", "",result)
-	row=result
+	#sacar rt twokenize
+	#tweets_new.append(result) DESCOMENTAR
 
+#users_df["tweets"] = tweets_new #DESCOMENTAR
 
 train_data=users_df.sample(frac=0.9,random_state=200)
 test_data=users_df.drop(train_data.index)
@@ -60,8 +63,8 @@ stopwords.add("RT")
 
 
 
-count_vect = CountVectorizer(stop_words=stopwords,strip_accents= 'unicode') #Para hacer bag of words
-X_train_counts = count_vect.fit_transform(train_data.tweets)
+count_vect = CountVectorizer(stop_words=stopwords, max_features=500 ) #Para hacer bag of words
+X_train_counts = count_vect.fit_transform(train_data.tweets) # TODO: sacar esto
 
 
 #print X_train_counts
@@ -89,7 +92,7 @@ train_data_features = X_train_counts.toarray()
 
 # Take a look at the words in the vocabulary
 vocab = count_vect.get_feature_names()
-print vocab #SACAR LAS PALABRAS QUE NO TIENEN SENTIDOOOOOOOO!!!
+#print vocab #SACAR LAS PALABRAS QUE NO TIENEN SENTIDOOOOOOOO!!!
 
 ##Aca vemos strings raros q deberiamos eliminar ej: \u0432\u0435\u043b\u0438\u043a\u0438\u043c
 
@@ -132,6 +135,8 @@ result = forest.predict(test_data_features)
 
 output = pd.DataFrame( data={"id":test_data["screen_name"], "age":result,"realAge":test_data["age"]})
 #print output
+#pandas profiling BUSCAR!!!!
+#aplicar tmb bigramas trigramas sntes de stopwords, hacer wordclouds
 
 # Use pandas to write the comma-separated output file
 output.to_csv( "Bag_of_Words_model.csv", index=False)
