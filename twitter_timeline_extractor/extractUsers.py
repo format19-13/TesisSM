@@ -46,22 +46,24 @@ class TwitterStreamer(Twython):
             screenName=''
 
             for x in range(0, len(screen_names_lst)):
-
-                if len(screenName)==1 :
+                if screenName=='':
+                    screenName=screen_names_lst[x]
+                elif len(screenName)==1 :
                     screenName=screenName+screen_names_lst[x]
                 else: 
                     screenName=screenName+","+screen_names_lst[x]
 
                 if ((x % 50==0 and x != 0) or (x+1==len(screen_names_lst))):
-
+                    print screenName
                     output=self.lookup_user(screen_name=screenName)
-
+                    print len(output)
                     print "USUARIOS GUARDADOS EN BD:"
                     for user in output:
+                        print user['screen_name']
                         tweets= self.get_user_timeline(screen_name=user['screen_name'], count=3000)
                         user['tweets']=tweets
                         user['screen_name']= user['screen_name'].lower()
-                        print user['screen_name']
+                     
                         #user['ageRange']= 
                         #self.getAgeFromFacebook(user)
                         ageRange=""
