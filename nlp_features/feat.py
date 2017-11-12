@@ -41,8 +41,10 @@ for (i,row) in users_df["tweets"].iteritems():
 
 #users_df["tweets"] = tweets_new #DESCOMENTAR
 
-train_data=users_df.sample(frac=0.9,random_state=200)
+train_data=users_df.sample(frac=0.9,random_state=200) ##probar con otras fracciones
 test_data=users_df.drop(train_data.index)
+##hacer particion balanceada, considerar 80/20 de cada clase (caret buscar si existe en python)
+##
 
 ##STOPWORDS EN SPANISH, SCIKIT TRAE SOLO EN INGLES
 stopwordsSP = (get_stop_words('spanish'))
@@ -65,10 +67,13 @@ stopwords.add("RT")
 
 count_vect = CountVectorizer(stop_words=stopwords, max_features=500 ) #Para hacer bag of words
 X_train_counts = count_vect.fit_transform(train_data.tweets) # TODO: sacar esto
+##mapeo feature/clase
+##agregar stopwords palabras frecuentes en todas las clases q no deciden
 
 
 #print X_train_counts
 
+## hacer wordcloud con la gente q sigue cada grupo, temas.
 
 # fit_transform() does two functions: First, it fits the model
 # and learns the vocabulary; second, it transforms our training data
@@ -87,6 +92,8 @@ train_data_features = X_train_counts.toarray()
 
 #print len(train_data) #212 users en train
 
+##ejecutar el proceso usando los custom attrs en lugar del texto (instagram, snap, cant followers, etc.)
+##guardar cant tweets
 #print train_data_features.shape 
 #(212, 94210) --> It has 212 rows and 94210 (one for each vocabulary word).
 
@@ -117,7 +124,8 @@ forest = RandomForestClassifier(n_estimators = 100)
 
 #print train_data["age"]
 
-forest = forest.fit( train_data_features, train_data["age"] )
+forest = forest.fit( train_data_features, train_data["age"] ) #probar naive bayes
+#revisar importance de los atributos en random forest
 
 # ********* APLICO RANDOM FOREST SOBRE LA DATA DE TEST *********#
 
@@ -147,7 +155,7 @@ output.to_csv( "Bag_of_Words_model.csv", index=False)
 
 print 'BOW+RandomForest: ',accuracy_score(result.tolist(),test_data["age"].values.tolist()),' accuracy'
 
-clf = RandomForestClassifier(n_estimators=100)
+clf = RandomForestClassifier(n_estimators=100) #verificar con otros valores
 # 10-Fold Cross validation
 print np.mean(cross_val_score(clf, train_data_features, train_data["age"]))
 
