@@ -122,3 +122,23 @@ class MongoDBUtils(object):
             self.logger.error('Mongo connection error', exc_info=True)
         except PyMongoError as e:
             self.logger.error('Error while trying to save user account', exc_info=True)
+
+    def get_customFields(self):
+
+        try:
+            df = DataFrame(columns=('screen_name', 'followers_count',  'tweets_count', 'linkedin', 'snapchat', 'instagram','age'))
+            # Obtiene una referencia a la instancia de la DB
+            db = self.mongo_client[MONGO_DB_NAME]
+            # Obtiene el ObjectID Mongo del perfil del data source para el usuario
+            col = db[DB_COL_USERS]
+            count=0
+            for user in col.find(): #para cada usuario
+                tweetText=""
+                df.loc[count] = [user['screen_name'],user['followers_count'],len(user['tweets']),user['linkedin'],user['snapchat'],user['instagram'],user['age'] ]
+                count += 1
+            return df
+
+        except ConnectionFailure as e:
+            self.logger.error('Mongo connection error', exc_info=True)
+        except PyMongoError as e:
+            self.logger.error('Error while trying to save user account', exc_info=True)

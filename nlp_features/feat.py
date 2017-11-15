@@ -3,7 +3,6 @@ import os,sys
 import os.path
 import numpy as np
 import pandas as pd
-import HTMLParser
 sys.path.append(os.path.abspath(os.pardir))
 from sklearn.model_selection import train_test_split
 from configs.settings import *
@@ -18,90 +17,54 @@ from sklearn.metrics import confusion_matrix
 from sklearn.metrics import classification_report
 from stop_words import get_stop_words
 import re
+import imp
+from nltk.corpus import stopwords
 
 ## *********ARMO EL DATASET DE TRAIN Y EL DE TEST *********
 db_access = MongoDBUtils()
 users_df = db_access.get_tweetsText()
 
+
 ##https://www.analyticsvidhya.com/blog/2015/06/quick-guide-text-data-cleaning-python/
 ##TWEETS CLEANUP
-
-#Escape HTML characters
-htmlParser= HTMLParser.HTMLParser()
 #https://github.com/myleott/ark-twokenize-py
-
 #Decode data
-tweets_new = []
+
 for (i,row) in users_df["tweets"].iteritems():
-	result= htmlParser.unescape(row)
-	result= unicode(result.encode("utf8"), errors='ignore')
+	result=''
+	result=re.sub(' RT ',"", row)
 	result= re.sub(r"http\S+", "",result)
-	#sacar rt twokenize
-	#tweets_new.append(result) DESCOMENTAR
+	result=re.sub(r'@\w+',"", result)
+	users_df["tweets"][i]=result
 
-#users_df["tweets"] = tweets_new #DESCOMENTAR
+# Split into training and test set
+# 80% of the input for training and 20% for testing
 
-train_data=users_df.sample(frac=0.9,random_state=200) ##probar con otras fracciones
+train_data=users_df.sample(frac=0.8,random_state=200) 
 test_data=users_df.drop(train_data.index)
-##hacer particion balanceada, considerar 80/20 de cada clase (caret buscar si existe en python)
-##
 
 ##STOPWORDS EN SPANISH, SCIKIT TRAE SOLO EN INGLES
-stopwordsSP = (get_stop_words('spanish'))
-
-stopwords=set()
-
-for x in stopwordsSP:
-	x=x.encode('utf-8')
-	stopwords.add(x)
-
-##add domain stopwords
-stopwords.add("https")
-stopwords.add("co")
-stopwords.add("RT")
-
-#print train_data.tweets
-
-
-
+foo = imp.load_source('stopwords', DIR_PREFIX+'/proyectos/TesisVT/nlp_features/nlp_utils.py')
+stopwords = foo.generateCustomStopwords()  
 
 count_vect = CountVectorizer(stop_words=stopwords, max_features=500 ) #Para hacer bag of words
-X_train_counts = count_vect.fit_transform(train_data.tweets) # TODO: sacar esto
-##mapeo feature/clase
-##agregar stopwords palabras frecuentes en todas las clases q no deciden
-
-
-#print X_train_counts
-
-## hacer wordcloud con la gente q sigue cada grupo, temas.
-
-# fit_transform() does two functions: First, it fits the model
-# and learns the vocabulary; second, it transforms our training data
-# into feature vectors. The input to fit_transform should be a list of 
-# strings.
+X_train_counts = count_vect.fit_transform(train_data.tweets)
+# fit_transform() fits the model and learns the vocabulary; second, it transforms our training data
+# into feature vectors. 
 
 ## ********* APLICO BAG OF WORDS *********
-
-#print count_vect.vocabulary_.get(u'algorithm')
+##To see occurrences of a specific word:
 #print count_vect.vocabulary_.get(u'amigos')
 
-#scikit no trae stopwords en espanol, solo en ingles.
-# Numpy arrays are easy to work with, so convert the result to an 
-# array
 train_data_features = X_train_counts.toarray()
+#print len(train_data) #186 users en train
 
-#print len(train_data) #212 users en train
-
-##ejecutar el proceso usando los custom attrs en lugar del texto (instagram, snap, cant followers, etc.)
-##guardar cant tweets
 #print train_data_features.shape 
-#(212, 94210) --> It has 212 rows and 94210 (one for each vocabulary word).
+#(186, 500) --> It has 212 rows and 500 features (500 most frequent words).
 
 # Take a look at the words in the vocabulary
 vocab = count_vect.get_feature_names()
-#print vocab #SACAR LAS PALABRAS QUE NO TIENEN SENTIDOOOOOOOO!!!
-
-##Aca vemos strings raros q deberiamos eliminar ej: \u0432\u0435\u043b\u0438\u043a\u0438\u043c
+#print vocab
 
 # Sum up the counts of each vocabulary word
 dist = np.sum(train_data_features, axis=0)
@@ -109,7 +72,7 @@ dist = np.sum(train_data_features, axis=0)
 # For each, print the vocabulary word and the number of times it 
 # appears in the training set
 #for tag, count in zip(vocab, dist):
- #   print count, tag
+#	print count, tag
 
 # ********* APLICO RANDOM FOREST Y LO ENTRENO CON LA DATA EN TRAIN*********#
 
@@ -118,14 +81,9 @@ print "Training the random forest..."
 # Initialize a Random Forest classifier with 100 trees
 forest = RandomForestClassifier(n_estimators = 100) 
 # Fit the forest to the training set, using the bag of words as 
-# features and the sentiment labels as the response variable
-#
-# This may take a few minutes to run
+# features and the age range as the response variable
 
-#print train_data["age"]
-
-forest = forest.fit( train_data_features, train_data["age"] ) #probar naive bayes
-#revisar importance de los atributos en random forest
+forest = forest.fit( train_data_features, train_data["age"] ) 
 
 # ********* APLICO RANDOM FOREST SOBRE LA DATA DE TEST *********#
 
@@ -135,16 +93,14 @@ forest = forest.fit( train_data_features, train_data["age"] ) #probar naive baye
 test_data_features = count_vect.transform(test_data.tweets)
 test_data_features = test_data_features.toarray()
 
-# Use the random forest to make sentiment label predictions
+# Use the random forest to make age range predictions
 result = forest.predict(test_data_features)
 
 # Copy the results to a pandas dataframe with an "id" column and
-# a "sentiment" column
+# a "age" column
 
 output = pd.DataFrame( data={"id":test_data["screen_name"], "age":result,"realAge":test_data["age"]})
 #print output
-#pandas profiling BUSCAR!!!!
-#aplicar tmb bigramas trigramas sntes de stopwords, hacer wordclouds
 
 # Use pandas to write the comma-separated output file
 output.to_csv( "Bag_of_Words_model.csv", index=False)

@@ -50,8 +50,11 @@ def main():
 
 	 	textFiltered=""
 		
+		foo = imp.load_source('scrapingFacebook', DIR_PREFIX+'/proyectos/TesisVT/nlp_features/nlp_utils.py')
+		stopwords = foo.generateCustomStopwords()                      
+		
 		for w in words:	
-			if w.decode("utf-8") not in generateCustomStopwords():
+			if w.decode("utf-8") not in stopwords:
 				textFiltered=textFiltered +' '+ w.encode("utf-8")
 
 		wordcloud = WordCloud(width=1600, height=800).generate(textFiltered.decode("utf-8"))
