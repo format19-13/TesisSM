@@ -30,19 +30,19 @@ class MongoDBUtils(object):
             db = self.mongo_client[MONGO_DB_NAME]
 
             # Obtiene el ObjectID Mongo del perfil del data source para el usuario
-            col = db[DB_COL_USERS]
+            col = db[DB_COL_UNLABELED_TWEETS]
 
             # FLAGS indicando como se configuro el streamer que trajo el tweet(track_terms, follow o bounding box)
-            document["geolocation"] = True if EnumSource.GEOLOCATION in source else False
-            document["follow"] = True if EnumSource.FOLLOW in source else False
-            document["track_terms"] = True if EnumSource.TRACKTERMS in source else False
+           # document["geolocation"] = True if EnumSource.GEOLOCATION in source else False
+           # document["follow"] = True if EnumSource.FOLLOW in source else False
+            #document["track_terms"] = True if EnumSource.TRACKTERMS in source else False
 
             col.insert_one(document)
 
         except ConnectionFailure as e:
             self.logger.error('Mongo connection error', exc_info=True)
         except PyMongoError as e:
-            self.logger.error('Error while trying to sace user account', exc_info=True)
+            self.logger.error('Error while trying to save user account', exc_info=True)
 
     def get_users(self):
 
@@ -52,7 +52,7 @@ class MongoDBUtils(object):
             db = self.mongo_client[MONGO_DB_NAME]
             # Obtiene el ObjectID Mongo del perfil del data source para el usuario
             col = db[DB_COL_USERS]
-            return col.find()
+            return col.find(no_cursor_timeout=True)
 
         except ConnectionFailure as e:
             self.logger.error('Mongo connection error', exc_info=True)
@@ -72,7 +72,7 @@ class MongoDBUtils(object):
     def get_tweetsText(self):
 
         try:
-            df = DataFrame(columns=('screen_name', 'tweets', 'age'))
+            df = DataFrame(columns=('screen_name', 'tweets', 'age','followers_count',  'tweets_count', 'linkedin', 'snapchat', 'instagram'))
             # Obtiene una referencia a la instancia de la DB
             db = self.mongo_client[MONGO_DB_NAME]
             # Obtiene el ObjectID Mongo del perfil del data source para el usuario
@@ -84,7 +84,7 @@ class MongoDBUtils(object):
                     tweetText= tweetText +' '+ tweet['text']
                 #print user['screen_name']
                 #print user['age']
-                df.loc[count] = [user['screen_name'],tweetText,user['age'] ]
+                df.loc[count] = [user['screen_name'],tweetText,user['age'],user['followers_count'],len(user['tweets']),user['linkedin'],user['snapchat'],user['instagram'] ]
                 count += 1
             return df
 
@@ -142,3 +142,8 @@ class MongoDBUtils(object):
             self.logger.error('Mongo connection error', exc_info=True)
         except PyMongoError as e:
             self.logger.error('Error while trying to save user account', exc_info=True)
+
+    def save_listSubscriptions(self, screen_name,lists):
+        db = self.mongo_client[MONGO_DB_NAME]
+        col = db[DB_COL_USERS]
+        col.update({'screen_name' : screen_name }, {'$set' : {'listsSubscriptions' : lists }})

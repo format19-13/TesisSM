@@ -11,6 +11,8 @@ Ejecutar extractUsers.py
 
 Ejecutar extractAgeFromFile.py
 
+Ejecutar extractListsSubscribed.py
+
 Ejecutar cloud_of_words.py para generar los wordclouds x rango de edad
 
 Ejecutar feat.py

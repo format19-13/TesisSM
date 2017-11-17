@@ -27,16 +27,17 @@ TWITTER_ACCESS_KEYS = {
     "description": "Twitter access key"
 }
 
-TRACK_TERMS = 'uruguay'
+TRACK_TERMS = ''
 
 # Cuentas a escuchar: Lista de IDs de cuentas de Twitter en un string separado por comas
-FOLLOWS_IDS = '2304818876, 74452681'
+FOLLOWS_IDS =''
 
 # Montevideo
-BOUNDING_BOXES = [
-                    -56.96411, -35.09295,
-                    -53.53638, -33.68778
-]
+BOUNDING_BOXES = [-56.96411, -35.09295,-53.53638, -33.68778]
+#-71.54296875,-52.8558641779 -66.005859375,-23.926013033 -53.4375,-32.9533681458 -71.54296875,-52.8558641779]
+#                    -56.96411, -35.09295,
+#                   -53.53638, -33.68778
+
 
 ############################
 

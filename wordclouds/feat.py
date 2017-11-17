@@ -79,19 +79,14 @@ dist = np.sum(train_data_features, axis=0)
 
 print "Training the random forest..."
 
-# Initialize Multinomial Naive Bayes
-bayes = MultinomialNB()
-
 # Initialize a Random Forest classifier with 100 trees
-forest = RandomForestClassifier(n_estimators = 100) 
-# Fit the forest to the training set, using the bag of)
-
+forest = MultinomialNB()
 # Fit the forest to the training set, using the bag of words as 
 # features and the age range as the response variable
 
 forest = forest.fit( train_data_features, train_data["age"] ) 
 
-bayes = bayes.fit( train_data_features, train_data["age"] ) 
+# ********* APLICO RANDOM FOREST SOBRE LA DATA DE TEST *********#
 
 # Read the test data
 
@@ -100,32 +95,30 @@ test_data_features = count_vect.transform(test_data.tweets)
 test_data_features = test_data_features.toarray()
 
 # Use the random forest to make age range predictions
-resultForest = forest.predict(test_data_features)
-
-resultBayes = bayes.predict(test_data_features)
+result = forest.predict(test_data_features)
 
 # Copy the results to a pandas dataframe with an "id" column and
 # a "age" column
 
-output = pd.DataFrame( data={"id":test_data["screen_name"], "realAge":test_data["age"], "ageRandomForest":resultForest,"ageNaiveBayes":resultBayes})
+output = pd.DataFrame( data={"id":test_data["screen_name"], "age":result,"realAge":test_data["age"]})
 #print output
 
 # Use pandas to write the comma-separated output file
-output.to_csv( "Bag_of_Words_model_ForestAndBayes.csv", index=False)
-
-# View a list of the features and their importance scores
-print "Importance of Features: ", list(zip(vocab, forest.feature_importances_))
+output.to_csv( "Bag_of_Words_model.csv", index=False)
 
 ###################################
 #******* MODEL EVALUATION *********
 ###################################
 
-#create confusion matrix: anything on the diagonal was classified correctly and the rest incorrectly.
-cnf_matrix =confusion_matrix(test_data['age'].tolist(), resultForest)
-print "Confusion Matrix for Random Forest: "
-print cnf_matrix
+print 'BOW+RandomForest: ',accuracy_score(result.tolist(),test_data["age"].values.tolist()),' accuracy'
 
-cnf_matrix2 =confusion_matrix(test_data['age'].tolist(), resultBayes)
-print "Confusion Matrix for Naive Bayes: "
-print cnf_matrix2
+clf = RandomForestClassifier(n_estimators=100) #verificar con otros valores
+# 10-Fold Cross validation
+print np.mean(cross_val_score(clf, train_data_features, train_data["age"]))
+
+target_names=list(set(train_data["age"].values.tolist()))
+
+print confusion_matrix(result.tolist(),test_data["age"].values.tolist(),target_names)
+
+print(classification_report(result.tolist(),test_data["age"].values.tolist(), target_names=target_names))
 

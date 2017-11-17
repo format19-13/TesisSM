@@ -105,16 +105,16 @@ class TwitterStreamer(TwythonStreamer):
   
     def run(self):
 
-        self.module_logger.debug(TRACK_TERMS)
-        self.module_logger.debug(FOLLOWS_IDS)
-
         while True:
             try:
-                track_terms = TRACK_TERMS if len(TRACK_TERMS) > 0 else None
-                follow = FOLLOWS_IDS if len(FOLLOWS_IDS) > 0 else None
+               # track_terms = TRACK_TERMS if len(TRACK_TERMS) > 0 else None
+                #follow = FOLLOWS_IDS if len(FOLLOWS_IDS) > 0 else None
                 locations = BOUNDING_BOXES if len(BOUNDING_BOXES) > 0 else None
-                self.statuses.filter(track=track_terms, follow=follow, stall_warnings=True,
-                                     locations=locations)
+                #self.statuses.filter(track=track_terms, follow=follow, stall_warnings=True,
+                #                     locations=locations)
+                
+                self.statuses.filter(locations=locations)
+     
             except ChunkedEncodingError as e:
                 msg = "ChunkedEncodingError in execution of the search track processor. " + str(e)
                 self.module_logger.debug(msg)
