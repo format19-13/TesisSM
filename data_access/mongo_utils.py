@@ -7,7 +7,7 @@ from pandas import DataFrame
 sys.path.append(os.path.abspath(os.pardir))
 from configs.settings import *
 from configs.data_bases import *
-
+import re
 from pymongo.errors import PyMongoError, ConnectionFailure
 import pymongo
 import logging
@@ -147,3 +147,29 @@ class MongoDBUtils(object):
         db = self.mongo_client[MONGO_DB_NAME]
         col = db[DB_COL_USERS]
         col.update({'screen_name' : screen_name }, {'$set' : {'listsSubscriptions' : lists }})
+
+    def getBioWithAge(self, collection):
+        df = DataFrame(columns=('screen_name', 'age'))
+        count=0
+        db = self.mongo_client[MONGO_DB_NAME]
+        col = db[collection]
+
+        for tweet in col.find(): #para cada tweet
+            bio = tweet['user']['description']
+
+            if tweet['lang'] == 'es' and isinstance(bio, unicode):
+                bio = bio.lower()
+
+                if bio.find(u'años')!= -1: 
+                    myre = re.compile(ur"(\d+)\s*años",re.UNICODE)
+
+                    match = re.search(myre, bio)
+                    if match:
+                        screen_name = tweet["user"]["screen_name"]
+                        age= int(match.group(1))
+                        if age > 5 and age < 100 and screen_name not in df.screen_name.values:
+                            print "guardando...",screen_name
+                            df.loc[count] = [screen_name,age]
+                            count += 1
+                            #col.update({'user.screen_name' : screen_name }, {'$set' : {'age' : age }})                    
+        df.to_csv('labeledUsers.csv')
