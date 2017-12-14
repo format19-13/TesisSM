@@ -22,6 +22,10 @@ def save_user(data):
     db_access = MongoDBUtils()
     db_access.save_user(data)
 
+def userExistsInDb(screenName):
+    db_access = MongoDBUtils()
+    return db_access.userExistsInDb(screenName)
+
 class TwitterStreamer(Twython):
 
     def __init__(self, source):
@@ -58,43 +62,50 @@ class TwitterStreamer(Twython):
 
                     print "USUARIOS GUARDADOS EN BD:"
                     for user in output:
-                        print user['screen_name']
-                        tweets= self.get_user_timeline(screen_name=user['screen_name'], count=3000)
-                        tweetsInSpanish=[]
+                        print "-----------------"
+                        if userExistsInDb(user["screen_name"].lower()) :
+                            print "User: ", user["screen_name"] , " already exists in DB"
+                        else :
+                            print user['screen_name']
+                            try:
+                                tweets= self.get_user_timeline(screen_name=user['screen_name'], count=3000)
+                                tweetsInSpanish=[]
 
-                        for tweet in tweets:
-                            if tweet["lang"]=="es":
-                                tweetsInSpanish.append(tweet)
+                                for tweet in tweets:
+                                    if tweet["lang"]=="es":
+                                        tweetsInSpanish.append(tweet)
+                                user['tweets']=tweetsInSpanish
+                                user['screen_name']= user['screen_name'].lower()
 
-                        user['tweets']=tweetsInSpanish
-                        user['screen_name']= user['screen_name'].lower()
-                     
-                        #user['ageRange']= 
-                        #self.getAgeFromFacebook(user)
-                        ageRange=""
-                        user["linkedin"] = False 
-                        user["instagram"] = False
-                        user["snapchat"] = False 
-                        try:
-                            urls= user["entities"]["url"]["urls"]
-                            for url in urls:
-                                if "facebook" in url["expanded_url"]:
-                                    print "tiene facebook"
-                                    fbk_url= url["expanded_url"]
-                                    fbk_username=fbk_url.split("facebook.com")[1].split("/")[1]
-                                    foo = imp.load_source('scrapingFacebook', DIR_PREFIX+'/proyectos/TesisVT/facebook_extractor/scrapingFacebook.py')
-                                    ageRange= foo.getEdad(fbk_username)
-                                    user["age"]=ageRange
-                                
-                                if "linkedin" in url["expanded_url"] : user["linkedin"] = True 
-                                if "instagram" in url["expanded_url"]: user["instagram"] = True 
-                                if "snapchat" in url["expanded_url"] : user["snapchat"] = True 
-                               
-                        except:
-                            print "####NO TIENE EDAD EN FACEBOOK###"
-                            pass ##no tiene facebook acct asociada
-                        print "SE SALVO USUARIO"
-                        save_user(user)
+                                #user['ageRange']= 
+                                #self.getAgeFromFacebook(user)
+                                ageRange=""
+                                user["linkedin"] = False 
+                                user["instagram"] = False
+                                user["snapchat"] = False 
+
+                                try:
+                                    urls= user["entities"]["url"]["urls"]
+                                    for url in urls:
+                                        if "facebook" in url["expanded_url"]:
+                                            print "tiene facebook"
+                                            fbk_url= url["expanded_url"]
+                                            fbk_username=fbk_url.split("facebook.com")[1].split("/")[1]
+                                            foo = imp.load_source('scrapingFacebook', DIR_PREFIX+'/proyectos/TesisVT/facebook_extractor/scrapingFacebook.py')
+                                            ageRange= foo.getEdad(fbk_username)
+                                            user["age"]=ageRange
+                                        
+                                        if "linkedin" in url["expanded_url"] : user["linkedin"] = True 
+                                        if "instagram" in url["expanded_url"]: user["instagram"] = True 
+                                        if "snapchat" in url["expanded_url"] : user["snapchat"] = True 
+                                       
+                                except:
+                                    print "####NO TIENE EDAD EN FACEBOOK###"
+                                    pass ##no tiene facebook acct asociada 
+                                save_user(user)
+                            except:
+                                print "HUBO UN ERROR CON EL USUARIO: ", user['screen_name']
+                                pass ##no tiene facebook acct asociada 
                     screenName=''
                     if len(screen_names_lst)>=50:
                         print "esperando"

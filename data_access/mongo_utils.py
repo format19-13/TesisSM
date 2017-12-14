@@ -11,7 +11,7 @@ import re
 from pymongo.errors import PyMongoError, ConnectionFailure
 import pymongo
 import logging
-
+import datetime
 
 class MongoDBUtils(object):
 
@@ -62,7 +62,12 @@ class MongoDBUtils(object):
     def save_user(self, document):
             db = self.mongo_client[MONGO_DB_NAME]
             col = db[DB_COL_USERS]
-            col.insert_one(document)
+            if col.find({"screen_name": document["screen_name"]}).count()> 0 :
+                print "User: ", document["screen_name"] , " already exists in DB"
+            else: 
+                col.insert_one(document)
+                print "Se salvo usuario: ", document["screen_name"]
+                
 
     def set_age_user(self, screen_name,age):
             db = self.mongo_client[MONGO_DB_NAME]
@@ -147,12 +152,19 @@ class MongoDBUtils(object):
         db = self.mongo_client[MONGO_DB_NAME]
         col = db[DB_COL_USERS]
         col.update({'screen_name' : screen_name }, {'$set' : {'listsSubscriptions' : lists }})
+    
+    def userExistsInDb(self, screen_name):
+        db = self.mongo_client[MONGO_DB_NAME]
+        col = db[DB_COL_USERS]
+        return col.find({"screen_name": screen_name}).count()> 0
 
     def getBioWithAge(self, collection):
         df = DataFrame(columns=('screen_name', 'age'))
         count=0
         db = self.mongo_client[MONGO_DB_NAME]
         col = db[collection]
+        screen_names=""
+        pathConfig= DIR_PREFIX+'/proyectos/TesisVT/configs/settings.py'
 
         for tweet in col.find(): #para cada tweet
             bio = tweet['user']['description']
@@ -167,9 +179,27 @@ class MongoDBUtils(object):
                     if match:
                         screen_name = tweet["user"]["screen_name"]
                         age= int(match.group(1))
-                        if age > 5 and age < 100 and screen_name not in df.screen_name.values:
+                        if age > 9 and age < 100 and screen_name not in df.screen_name.values:
+                            if 10 <= age <= 17:
+                                ageRange = '10-17'
+                            if 18 <= age <= 24:
+                                ageRange = '18-24'
+                            elif 25 <= age <= 34:
+                                ageRange = '25-34'
+                            elif 35 <= age <= 49:
+                                ageRange = '35-49'
+                            elif 50 <= age <= 64:
+                                ageRange = '50-64'
+                            elif 65 <= age <= 99: 
+                                ageRange = '65-xx'
+                               
                             print "guardando...",screen_name
-                            df.loc[count] = [screen_name,age]
+                            df.loc[count] = [screen_name,ageRange]
                             count += 1
-                            #col.update({'user.screen_name' : screen_name }, {'$set' : {'age' : age }})                    
-        df.to_csv('labeledUsers.csv')
+                            screen_names=screen_names +','+ screen_name
+        f = open(pathConfig,'a')
+        f.write('SCREEN_NAMES_NEW='+'"'+screen_names.lower()+'"'+'\n') 
+        f.close() 
+        col.update({'user.screen_name' : screen_name }, {'$set' : {'age' : age }}) 
+        col.update({'user.screen_name' : screen_name }, {'$set' : {'ageRange' : ageRange }})                       
+        df.to_csv('labeledUsers.csv', index=False)
