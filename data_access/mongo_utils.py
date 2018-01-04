@@ -30,15 +30,17 @@ class MongoDBUtils(object):
             db = self.mongo_client[MONGO_DB_NAME]
 
             # Obtiene el ObjectID Mongo del perfil del data source para el usuario
-            col = db[DB_COL_UNLABELED_TWEETS]
+            colT = db[DB_COL_UNLABELED_TWEETS]
+            colU = db[DB_COL_UNLABELED_USERS]
 
             # FLAGS indicando como se configuro el streamer que trajo el tweet(track_terms, follow o bounding box)
            # document["geolocation"] = True if EnumSource.GEOLOCATION in source else False
            # document["follow"] = True if EnumSource.FOLLOW in source else False
             #document["track_terms"] = True if EnumSource.TRACKTERMS in source else False
 
-            col.insert_one(document)
-
+            colT.insert_one(document)
+            if not self.userExistsInDb(document['user']['screen_name'], DB_COL_UNLABELED_USERS) :
+                colU.insert_one(document['user'])
         except ConnectionFailure as e:
             self.logger.error('Mongo connection error', exc_info=True)
         except PyMongoError as e:
@@ -153,9 +155,9 @@ class MongoDBUtils(object):
         col = db[DB_COL_USERS]
         col.update({'screen_name' : screen_name }, {'$set' : {'listsSubscriptions' : lists }})
     
-    def userExistsInDb(self, screen_name):
+    def userExistsInDb(self, screen_name, collection):
         db = self.mongo_client[MONGO_DB_NAME]
-        col = db[DB_COL_USERS]
+        col = db[collection]
         return col.find({"screen_name": screen_name}).count()> 0
 
     def getBioWithAge(self, collection):
@@ -166,10 +168,10 @@ class MongoDBUtils(object):
         screen_names=""
         pathConfig= DIR_PREFIX+'/proyectos/TesisVT/configs/settings.py'
 
-        for tweet in col.find(): #para cada tweet
-            bio = tweet['user']['description']
+        for user in col.find(): #para cada tweet
+            bio = user['description']
 
-            if tweet['lang'] == 'es' and isinstance(bio, unicode):
+            if user['lang'] == 'es' and isinstance(bio, unicode):
                 bio = bio.lower()
 
                 if bio.find(u'años')!= -1: 
@@ -177,9 +179,9 @@ class MongoDBUtils(object):
 
                     match = re.search(myre, bio)
                     if match:
-                        screen_name = tweet["user"]["screen_name"]
+                        screen_name = user["screen_name"]
                         age= int(match.group(1))
-                        if age > 9 and age < 100 and screen_name not in df.screen_name.values:
+                        if age > 9 and age < 100 and screen_name not in df.screen_name.values and not self.userExistsInDb(screen_name,DB_COL_USERS):
                             if 10 <= age <= 17:
                                 ageRange = '10-17'
                             if 18 <= age <= 24:
@@ -195,11 +197,17 @@ class MongoDBUtils(object):
                                
                             print "guardando...",screen_name
                             df.loc[count] = [screen_name,ageRange]
-                            count += 1
-                            screen_names=screen_names +','+ screen_name
-        f = open(pathConfig,'a')
-        f.write('SCREEN_NAMES_NEW='+'"'+screen_names.lower()+'"'+'\n') 
-        f.close() 
-        col.update({'user.screen_name' : screen_name }, {'$set' : {'age' : age }}) 
-        col.update({'user.screen_name' : screen_name }, {'$set' : {'ageRange' : ageRange }})                       
+ 
+                            col.update({'screen_name' : screen_name }, {'$set' : {'age' : age }}) 
+                            col.update({'screen_name' : screen_name }, {'$set' : {'ageRange' : ageRange }})                       
         df.to_csv('labeledUsers.csv', index=False)
+
+    def aux(self):
+        db = self.mongo_client[MONGO_DB_NAME]
+        colT = db['unlabeled_tweets']
+        colU=    db['unlabeled_users']
+
+        for tweet in colT.find(): #para cada tweet
+            if not self.userExistsInDb(tweet['user']['screen_name'],'unlabeled_users'):            
+                colU.insert_one(tweet['user'])
+                print "insertando en DB: ", tweet['user']['screen_name']

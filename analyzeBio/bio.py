@@ -23,7 +23,7 @@ from nltk.corpus import stopwords
 
 ## *********ARMO EL DATASET DE TRAIN Y EL DE TEST *********
 db_access = MongoDBUtils()
-users_df = db_access.getBioWithAge("unlabeled_tweets")
+users_df = db_access.getBioWithAge("unlabeled_users")
 
 
 
