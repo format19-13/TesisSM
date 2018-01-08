@@ -46,14 +46,14 @@ class MongoDBUtils(object):
         except PyMongoError as e:
             self.logger.error('Error while trying to save user account', exc_info=True)
 
-    def get_users(self):
+    def get_users(self,collection):
 
         try:
 
             # Obtiene una referencia a la instancia de la DB
             db = self.mongo_client[MONGO_DB_NAME]
             # Obtiene el ObjectID Mongo del perfil del data source para el usuario
-            col = db[DB_COL_USERS]
+            col = db[collection]
             return col.find(no_cursor_timeout=True)
 
         except ConnectionFailure as e:
@@ -64,7 +64,8 @@ class MongoDBUtils(object):
     def save_user(self, document):
             db = self.mongo_client[MONGO_DB_NAME]
             col = db[DB_COL_USERS]
-            if col.find({"screen_name": document["screen_name"]}).count()> 0 :
+            regx = re.compile(document["screen_name"], re.IGNORECASE)
+            if col.find({"screen_name": regx}).count()> 0 :
                 print "User: ", document["screen_name"] , " already exists in DB"
             else: 
                 col.insert_one(document)
@@ -158,7 +159,8 @@ class MongoDBUtils(object):
     def userExistsInDb(self, screen_name, collection):
         db = self.mongo_client[MONGO_DB_NAME]
         col = db[collection]
-        return col.find({"screen_name": screen_name}).count()> 0
+        regx = re.compile(screen_name, re.IGNORECASE)
+        return col.find({"screen_name": regx}).count()> 0
 
     def getBioWithAge(self, collection):
         df = DataFrame(columns=('screen_name', 'age'))
@@ -181,7 +183,7 @@ class MongoDBUtils(object):
                     if match:
                         screen_name = user["screen_name"]
                         age= int(match.group(1))
-                        if age > 9 and age < 100 and screen_name not in df.screen_name.values and not self.userExistsInDb(screen_name,DB_COL_USERS):
+                        if age > 9 and age < 100 and screen_name not in df.screen_name.values:
                             if 10 <= age <= 17:
                                 ageRange = '10-17'
                             if 18 <= age <= 24:
@@ -202,7 +204,48 @@ class MongoDBUtils(object):
                             col.update({'screen_name' : screen_name }, {'$set' : {'ageRange' : ageRange }})                       
         df.to_csv('labeledUsers.csv', index=False)
 
-    def aux(self):
+    def getEdad(self,screen_name,collection):
+        db = self.mongo_client[MONGO_DB_NAME]
+        col = db[collection]
+        age = -1
+
+        regx = re.compile(screen_name, re.IGNORECASE)
+
+        for user in col.find({"screen_name": regx}):
+            try:
+                age=user['ageRange']
+            except:
+                pass
+        if age == -1 : 
+            print "Usuario: ", screen_name, ", edad: La edad no pudo ser obtenida de unlabeled_users"
+
+        return age
+
+    def populateInvalidUserAges(self):
+        db = self.mongo_client[MONGO_DB_NAME]
+        col = db["users"]
+        age = -1
+
+        for user in col.find({"age": -1}):
+            regx = re.compile(user["screen_name"], re.IGNORECASE)
+            try:
+                age = self.getEdad(user['screen_name'],"unlabeled_users")
+                print user["screen_name"] , ': edad: ', age
+                col.update({'screen_name' : user["screen_name"] }, {'$set' : {'age' : age }})
+            except:
+                pass
+            
+        for user in col.find({'age':{'$exists': False}}):
+            regx = re.compile(user["screen_name"], re.IGNORECASE)
+            try:
+                age = self.getEdad(user['screen_name'],"unlabeled_users")
+                print user["screen_name"] , ': edad: ', age
+                col.update({'screen_name' : user["screen_name"] }, {'$set' : {'age' : age }})
+            except:
+                pass
+
+
+    def populateUsersOfTweetsStreamed(self):
         db = self.mongo_client[MONGO_DB_NAME]
         colT = db['unlabeled_tweets']
         colU=    db['unlabeled_users']

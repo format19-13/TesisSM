@@ -1,0 +1,1 @@
+db.getCollection('unlabeled_tweets').find({"user.screen_name":"JessicaLema11"})

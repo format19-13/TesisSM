@@ -18,15 +18,11 @@ import pymongo
 from pymongo import MongoClient
 import imp
 
-def save_user(data):
-    db_access = MongoDBUtils()
-    db_access.save_user(data)
-
-def userExistsInDb(screenName):
-    db_access = MongoDBUtils()
-    return db_access.userExistsInDb(screenName)
-
 class TwitterStreamer(Twython):
+
+    def save_user(self,data):
+        db_access = MongoDBUtils()
+        db_access.save_user(data)
 
     def __init__(self, source):
 
@@ -44,88 +40,83 @@ class TwitterStreamer(Twython):
 
   
     def run(self):
-        try:
+        db_access = MongoDBUtils()
+        usersUnlabeled = db_access.get_users("unlabeled_users")
+        cont=0
+        screen_names = ''
 
-            screen_names_lst=SCREEN_NAMES.split(",")
-            screenName=''
+        for user_unlab in usersUnlabeled:
+            age = db_access.getEdad(user_unlab['screen_name'],'unlabeled_users')
 
-            for x in range(0, len(screen_names_lst)):
-                if screenName=='':
-                    screenName=screen_names_lst[x]
-                elif len(screenName)==1 :
-                    screenName=screenName+screen_names_lst[x]
-                else: 
-                    screenName=screenName+","+screen_names_lst[x]
+            if age != -1 and not db_access.userExistsInDb(user_unlab['screen_name'].lower(),'users') :                     
+                cont = cont+1
 
-                if ((x % 50==0 and x != 0) or (x+1==len(screen_names_lst))):
-                    output=self.lookup_user(screen_name=screenName)
+                if screen_names == '':
+                    screen_names = user_unlab['screen_name']
+                else:
+                    screen_names = screen_names + ','+ user_unlab['screen_name']
+
+                if cont == 99 : #lookup_user: 100 requests every 15 min
+                    output=self.lookup_user(screen_name=screen_names)
 
                     print "USUARIOS GUARDADOS EN BD:"
                     for user in output:
-                        print "-----------------"
-                        if userExistsInDb(user["screen_name"].lower()) :
-                            print "User: ", user["screen_name"] , " already exists in DB"
-                        else :
-                            print user['screen_name']
-                            try:
-                                tweets= self.get_user_timeline(screen_name=user['screen_name'], count=3000)
-                                tweetsInSpanish=[]
+                        try:
+                            userToSave = self.getUserTweetsAndInfo(user)
+                            userToSave["age"]=db_access.getEdad(userToSave['screen_name'],"unlabeled_users")
+                            print userToSave['screen_name']
+                            self.save_user(user)
+                        except Exception as e: 
+                            print "Error al intentar guardar usuario: ", user["screen_name"]
+                            print(e)
+                            pass
+                        
+                    screenName=''                        
+                    print "esperando"
+                    time.sleep(900) 
+                    cont = 0
+                    screen_names=""
+        
+        if len(screen_names) != 0:
+            output=self.lookup_user(screen_name=screen_names)
 
-                                for tweet in tweets:
-                                    if tweet["lang"]=="es":
-                                        tweetsInSpanish.append(tweet)
-                                user['tweets']=tweetsInSpanish
-                                user['screen_name']= user['screen_name'].lower()
+            for user in output:    
+                try:     
+                    userToSave = self.getUserTweetsAndInfo(user)
+                    userToSave["age"]=db_access.getEdad(userToSave['screen_name'],"unlabeled_users")
+                    print userToSave['screen_name']
+                    self.save_user(user)                
+                except Exception as e: 
+                    print "Error al intentar guardar usuario: ", user["screen_name"]
+                    print(e)
+                    pass
 
-                                #user['ageRange']= 
-                                #self.getAgeFromFacebook(user)
-                                ageRange=""
-                                user["linkedin"] = False 
-                                user["instagram"] = False
-                                user["snapchat"] = False 
+    def getUserTweetsAndInfo(self,user):
+        tweets= self.get_user_timeline(screen_name=user['screen_name'], count=3000)
+        tweetsInSpanish=[]
 
-                                try:
-                                    urls= user["entities"]["url"]["urls"]
-                                    for url in urls:
-                                        if "facebook" in url["expanded_url"]:
-                                            print "tiene facebook"
-                                            fbk_url= url["expanded_url"]
-                                            fbk_username=fbk_url.split("facebook.com")[1].split("/")[1]
-                                            foo = imp.load_source('scrapingFacebook', DIR_PREFIX+'/proyectos/TesisVT/facebook_extractor/scrapingFacebook.py')
-                                            ageRange= foo.getEdad(fbk_username)
-                                            user["age"]=ageRange
-                                        
-                                        if "linkedin" in url["expanded_url"] : user["linkedin"] = True 
-                                        if "instagram" in url["expanded_url"]: user["instagram"] = True 
-                                        if "snapchat" in url["expanded_url"] : user["snapchat"] = True 
-                                       
-                                except:
-                                    print "####NO TIENE EDAD EN FACEBOOK###"
-                                    pass ##no tiene facebook acct asociada 
-                                save_user(user)
-                            except:
-                                print "HUBO UN ERROR CON EL USUARIO: ", user['screen_name']
-                                pass ##no tiene facebook acct asociada 
-                    screenName=''
-                    if len(screen_names_lst)>=50:
-                        print "esperando"
-                        time.sleep(900)
+        for tweet in tweets:                            
+            if tweet["lang"]=="es":
+                tweetsInSpanish.append(tweet)
+            
+        user['tweets']=tweetsInSpanish                    
+        user['screen_name']= user['screen_name'].lower()
+        user["linkedin"] = False                                 
+        user["instagram"] = False
+        user["snapchat"] = False 
 
-        except ChunkedEncodingError as e:
-            msg = "ChunkedEncodingError in execution of the search track processor. " + str(e)
-            self.module_logger.debug(msg)
-            self.module_logger.debug(traceback.format_exc())
-            self.module_logger.debug("Resetting streamer...")
-        except Exception as e:
-            print str(e)
-            self.module_logger.rollback()
-            self.module_logger.close()
-            msg = "Unexpected error in execution of the search track processor. " + str(e)
-            self.module_logger.debug(msg)
-            self.module_logger.debug(traceback.format_exc())
-            self.module_logger.debug("Resetting streamer...")
-    
-    def getAgeFromFacebook(user):
+        try:                    
+            urls= user["entities"]["url"]["urls"]
+            for url in urls:                                      
+                if "linkedin" in url["expanded_url"] : user["linkedin"] = True 
+                if "instagram" in url["expanded_url"]: user["instagram"] = True 
+                if "snapchat" in url["expanded_url"] : user["snapchat"] = True                              
+        except Exception as e: 
+                #"Usuario: ", user['screen_name'], "no tiene links asociados"
+                pass
+        return user
+
+    def getAgeFromFacebook(self,user):
         ageRange=""
         try:
             urls= user["entities"]["url"]["urls"]

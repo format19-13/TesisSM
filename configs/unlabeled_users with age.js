@@ -1,0 +1,1 @@
+db.getCollection('unlabeled_users').find({ age: { $exists: true}}).count()
