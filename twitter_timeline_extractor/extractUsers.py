@@ -50,6 +50,7 @@ class TwitterStreamer(Twython):
 
             if age != -1 and not db_access.userExistsInDb(user_unlab['screen_name'].lower(),'users') :                     
                 cont = cont+1
+                print user_unlab['screen_name']
 
                 if screen_names == '':
                     screen_names = user_unlab['screen_name']
@@ -57,6 +58,7 @@ class TwitterStreamer(Twython):
                     screen_names = screen_names + ','+ user_unlab['screen_name']
 
                 if cont == 99 : #lookup_user: 100 requests every 15 min
+                    print 1
                     output=self.lookup_user(screen_name=screen_names)
 
                     print "USUARIOS GUARDADOS EN BD:"
@@ -76,16 +78,17 @@ class TwitterStreamer(Twython):
                     time.sleep(900) 
                     cont = 0
                     screen_names=""
-        
+
         if len(screen_names) != 0:
             output=self.lookup_user(screen_name=screen_names)
-
-            for user in output:    
+            print "USUARIOS GUARDADOS EN BD:"
+            for user in output: 
+                print user['screen_name']   
                 try:     
                     userToSave = self.getUserTweetsAndInfo(user)
                     userToSave["age"]=db_access.getEdad(userToSave['screen_name'],"unlabeled_users")
                     print userToSave['screen_name']
-                    self.save_user(user)                
+                    self.save_user(user)   
                 except Exception as e: 
                     print "Error al intentar guardar usuario: ", user["screen_name"]
                     print(e)

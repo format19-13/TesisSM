@@ -170,7 +170,7 @@ class MongoDBUtils(object):
         screen_names=""
         pathConfig= DIR_PREFIX+'/proyectos/TesisVT/configs/settings.py'
 
-        for user in col.find(): #para cada tweet
+        for user in col.find({'age':{'$exists': False}}): #para cada unlabeled user
             bio = user['description']
 
             if user['lang'] == 'es' and isinstance(bio, unicode):
@@ -216,8 +216,8 @@ class MongoDBUtils(object):
                 age=user['ageRange']
             except:
                 pass
-        if age == -1 : 
-            print "Usuario: ", screen_name, ", edad: La edad no pudo ser obtenida de unlabeled_users"
+        #if age == -1 : 
+            #print "Usuario: ", screen_name, ", edad: La edad no pudo ser obtenida de unlabeled_users"
 
         return age
 
