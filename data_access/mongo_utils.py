@@ -77,6 +77,16 @@ class MongoDBUtils(object):
             col = db[DB_COL_USERS]
             col.update({'screen_name' : screen_name }, {'$set' : {'age' : age }})
 
+    def set_profilePic_age_user(self, screen_name,age):
+            db = self.mongo_client[MONGO_DB_NAME]
+            col = db[DB_COL_USERS]
+            col.update({'screen_name' : screen_name }, {'$set' : {'profile_pic_age' : age }})
+
+    def updateProfilePicture(self, screen_name,imageUrl):
+            db = self.mongo_client[MONGO_DB_NAME]
+            col = db[DB_COL_USERS]
+            col.update({'screen_name' : screen_name }, {'$set' : {'profile_image_url_https' : imageUrl }})
+
     def get_tweetsText(self):
 
         try:
@@ -254,3 +264,15 @@ class MongoDBUtils(object):
             if not self.userExistsInDb(tweet['user']['screen_name'],'unlabeled_users'):            
                 colU.insert_one(tweet['user'])
                 print "insertando en DB: ", tweet['user']['screen_name']
+
+    def hasValidProfilePicAge(self,screen_name):
+        db = self.mongo_client[MONGO_DB_NAME]
+        col = db['users']
+        regx = re.compile(screen_name, re.IGNORECASE)
+        user = col.find({"screen_name": regx})[0]
+        
+        try:
+            user[profile_pic_age]
+            return user[profile_pic_age] != -1
+        except:
+            return False

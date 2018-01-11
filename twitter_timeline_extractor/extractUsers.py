@@ -134,7 +134,13 @@ class TwitterStreamer(Twython):
             pass ##no tiene facebook acct asociada
 
         return ageRange
- 
+
+    def getLatestProfilePic(self,screen_name):
+        user=self.lookup_user(screen_name=screen_name)
+        profilePic=user[0]["profile_image_url_https"]
+        db_access = MongoDBUtils()
+        db_access.updateProfilePicture(screen_name,profilePic)
+        return profilePic.replace("normal", "400x400")
 
 def main():
     print 'Process start...'
