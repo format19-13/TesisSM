@@ -19,7 +19,7 @@ from pymongo import MongoClient
 import imp
 from extractUsers import TwitterStreamer
 from bio import etiquetarUsuarios
-
+from howold_extractor.scrapingHowold import analyzeProfilePicture
 ##Buscar edad en bio y guardarla en el usuario si existe
 print "Ejecutando bio.py"
 etiquetarUsuarios()
@@ -28,4 +28,8 @@ etiquetarUsuarios()
 print "Ejecutando extractUsers.py"
 processor = TwitterStreamer(source=SOURCE)
 processor.run()
+
+##guardar la edad en base a la profile pic de la collection "users"
+print "Ejecutando analyzeProfilePicture.py"
+analyzeProfilePicture()
 

@@ -22,7 +22,7 @@ def analyzeProfilePicture():
 
 			print user['screen_name'], ' - ' , age 
 
-			if cont%20==0 :
+			if cont%19==0 :
 				print "Esperando..."
 				time.sleep(60) 
 
@@ -53,7 +53,7 @@ def getAgeFromProfilePicture(screen_name,image):
 
 	if result ==-1:
 		streamer=TwitterStreamer(Twython)
-		newProfilePic= streamer.getLatestProfilePic(screen_name)
+		newProfilePic= streamer.getLatestProfilePic(screen_name,image)
 		isNew = image != newProfilePic
 		print "profile pic updated: " , isNew
 
@@ -61,5 +61,3 @@ def getAgeFromProfilePicture(screen_name,image):
 			result= getAgeFromProfilePicture(screen_name,newProfilePic)
 			print result
 	return result
-
-analyzeProfilePicture()

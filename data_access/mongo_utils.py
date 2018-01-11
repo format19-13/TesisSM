@@ -272,7 +272,7 @@ class MongoDBUtils(object):
         user = col.find({"screen_name": regx})[0]
         
         try:
-            user[profile_pic_age]
-            return user[profile_pic_age] != -1
+            user['profile_pic_age']
+            return True #user[profile_pic_age] != -1
         except:
             return False

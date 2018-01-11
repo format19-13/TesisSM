@@ -30,9 +30,9 @@ class TwitterStreamer(Twython):
         self.count = 0
 
         # Logger
-        streamer_logging.init_logger(root_name=LOGGING_ROOT_NAME, level='DEBUG', log_base_path=LOGGING_BASE_PATH)
-        self.module_logger = logging.getLogger(LOGGING_ROOT_NAME + '.streamer')
-        self.module_logger.info("Starting twitter streamer...")
+        #streamer_logging.init_logger(root_name=LOGGING_ROOT_NAME, level='DEBUG', log_base_path=LOGGING_BASE_PATH)
+        #self.module_logger = logging.getLogger(LOGGING_ROOT_NAME + '.streamer')
+        #self.module_logger.info("Starting twitter streamer...")
 
         Twython.__init__(self, TWITTER_ACCESS_KEYS["app_key"], TWITTER_ACCESS_KEYS["app_secret"],
                                  TWITTER_ACCESS_KEYS["app_access_token"],
@@ -135,12 +135,16 @@ class TwitterStreamer(Twython):
 
         return ageRange
 
-    def getLatestProfilePic(self,screen_name):
-        user=self.lookup_user(screen_name=screen_name)
-        profilePic=user[0]["profile_image_url_https"]
-        db_access = MongoDBUtils()
-        db_access.updateProfilePicture(screen_name,profilePic)
-        return profilePic.replace("normal", "400x400")
+    def getLatestProfilePic(self,screen_name,image):
+        try : 
+            user=self.lookup_user(screen_name=screen_name)
+            profilePic=user[0]["profile_image_url_https"]
+            db_access = MongoDBUtils()
+            db_access.updateProfilePicture(screen_name,profilePic)
+            return profilePic.replace("normal", "400x400")
+        except :
+            return image  
+
 
 def main():
     print 'Process start...'
