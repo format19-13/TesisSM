@@ -125,8 +125,32 @@ class MongoDBUtils(object):
             return tweetText        
         except ConnectionFailure as e:
             self.logger.error('Mongo connection error', exc_info=True)
-        except PyMongoError as e:
-            self.logger.error('Error while trying to save user account', exc_info=True)
+        except:
+            self.logger.error('Error', exc_info=True)
+
+    def get_SubscriptionListsFromAgeRange(self, ageRange):
+
+        try:          
+            # Obtiene una referencia a la instancia de la DB
+            db = self.mongo_client[MONGO_DB_NAME]
+            # Obtiene el ObjectID Mongo del perfil del data source para el usuario
+            col = db[DB_COL_USERS]
+            result=""
+            for user in col.find({"age":ageRange}) :
+                try:
+                    if user['listsSubscriptions'] != -1:
+                        for subslist in  user['listsSubscriptions']:
+                            
+                            if len(subslist)>0:
+                                result = result +' '+ (subslist['name'].replace(" ", "_"))
+                except: 
+                    #print 'usuario: ',user['screen_name'],' no tiene listas'
+                    pass
+            return result        
+        except ConnectionFailure as e:
+            print 'Mongo connection error', e
+        except Exception as ex:
+            print 'Error',ex
 
     def getAgeRanges(self):
 

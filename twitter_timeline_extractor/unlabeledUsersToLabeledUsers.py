@@ -20,6 +20,8 @@ import imp
 from extractUsers import TwitterStreamer
 from bio import etiquetarUsuarios
 from howold_extractor.scrapingHowold import analyzeProfilePicture
+from extractListsSubscriptions import TwitterStreamerSubscriptions
+
 ##Buscar edad en bio y guardarla en el usuario si existe
 print "Ejecutando bio.py"
 etiquetarUsuarios()
@@ -33,3 +35,7 @@ processor.run()
 print "Ejecutando analyzeProfilePicture.py"
 analyzeProfilePicture()
 
+##guardar las subscriptions del user en collection "users"
+print "Ejecutando extractListsSubscriptions.py"
+lists = TwitterStreamerSubscriptions(source=SOURCE)
+lists.run()

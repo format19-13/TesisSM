@@ -38,76 +38,17 @@ def main():
 	for ar in ageRanges:
 
 		#Decode data
-		text = db_access.get_tweetsTextFromAgeRange(ar)
-		result=text
-		result=re.sub(' RT ',"", result)
-		result=re.sub(r'(\s)@\w+',"", result)
-		result = re.sub(r"http\S+", "", result)
-
-		punct = string.punctuation.replace("#", "¿¡")
-		result = remove_from_string(result, punct)
-		words=result.lower().split()
-
-	 	textFiltered=""
+		result = db_access.get_SubscriptionListsFromAgeRange(ar)
 		
-		foo = imp.load_source('scrapingFacebook', DIR_PREFIX+'/proyectos/TesisVT/nlp_features/nlp_utils.py')
-		stopwords = foo.generateCustomStopwords()                      
-		
-		for w in words:	
-			if w.decode("utf-8") not in stopwords:
-				textFiltered=textFiltered +' '+ w.encode("utf-8")
-
-		wordcloud = WordCloud(width=1600, height=800).generate(textFiltered.decode("utf-8"))
+		wordcloud = WordCloud(width=1600, height=800).generate(result)
 		# Open a plot of the generated image.
 		plt.figure( figsize=(20,10), facecolor='k')
-		plt.title('wordcloud ages:'+ ar)
+		plt.title('wordcloud subscription lists:'+ ar)
 		plt.imshow(wordcloud)
 		plt.axis("off")
 		plt.tight_layout(pad=0)
-		plt.savefig('wordcloud_'+ ar +".png", facecolor='k', bbox_inches='tight')
+		plt.savefig('wordcloud_subscriptions'+ ar +".png", facecolor='k', bbox_inches='tight')
 
-def remove_from_string(string, chars_to_remove):
-	""" Removes all occurances of a the given characters
-	from the string. """
-	result = ""
-	for char in string:
-		if not char in chars_to_remove:
-			result = result + char
-
-	return result 
-
-def generateCustomStopwords():
-
-	stopset = set(nltk.corpus.stopwords.words('spanish'))
-
-	##add domain stopwords
-	stopset.add((u'hoy'))
-	stopset.add((u'más'))
-	stopset.add((u'si'))
-	stopset.add((u'aquí'))
-	stopset.add((u'ahora'))
-	stopset.add((u'está'))
-	stopset.add((u'ser'))
-	stopset.add((u'bien'))
-	stopset.add((u'gracias'))
-	stopset.add((u'qué'))
-	stopset.add((u'día'))
-	stopset.add((u'días'))
-	stopset.add((u'año'))
-	stopset.add((u'años'))
-	stopset.add((u'mejor'))
-	stopset.add((u'puede'))
-	stopset.add((u'hacer'))
-	stopset.add((u'así'))
-	stopset.add((u'hace'))
-	stopset.add((u'ver'))
-	stopset.add((u'cómo'))
-	stopset.add((u'va'))
-	stopset.add((u'españa'))
-	stopset.add((u'vía'))
-	stopset.add((u'gran'))
-	stopset.add((u'nuevo'))
-	return stopset
 
 if __name__ == '__main__':
     main()

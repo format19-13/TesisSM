@@ -22,7 +22,7 @@ def save_listSubscriptions(screen_name,lists):
     db_access = MongoDBUtils()
     db_access.save_listSubscriptions(screen_name,lists)
 
-class TwitterStreamer(Twython):
+class TwitterStreamerSubscriptions(Twython):
 
     def __init__(self, source):
 
@@ -30,37 +30,47 @@ class TwitterStreamer(Twython):
         self.count = 0
 
         # Logger
-        streamer_logging.init_logger(root_name=LOGGING_ROOT_NAME, level='DEBUG', log_base_path=LOGGING_BASE_PATH)
-        self.module_logger = logging.getLogger(LOGGING_ROOT_NAME + '.streamer')
-        self.module_logger.info("Starting twitter streamer...")
-
         Twython.__init__(self, TWITTER_ACCESS_KEYS["app_key"], TWITTER_ACCESS_KEYS["app_secret"],
                                  TWITTER_ACCESS_KEYS["app_access_token"],
                                  TWITTER_ACCESS_KEYS["app_access_token_secret"])
 
     def run(self):
         db_access = MongoDBUtils()
-        users = db_access.get_users();
+        users = db_access.get_users("users");
         contador=1
         for user in users:
             try:
-                if contador < 15:
-                    print user["screen_name"]
-                    lists=self.get_list_subscriptions(screen_name=user['screen_name'],count=1000)                
-                    print len(lists["lists"])
-                    save_listSubscriptions(user["screen_name"], lists["lists"])
-                    contador=contador+1
-                else:
-                    print "esperando"
-                    time.sleep(900)
-                    contador = 1
-            except: 
-                print 'hubo un error en user: ',user["screen_name"]
-                contador = contador+1
+                if True: # not self.hasSubscriptionLists(user):
 
+                    if contador < 15:
+                        contador = contador + 1
+                        print '----------------------------'
+                        print user["screen_name"]
+                        lists=self.get_list_subscriptions(screen_name=user['screen_name'],count=1000)                
+                        print len(lists["lists"])
+                        save_listSubscriptions(user["screen_name"], lists["lists"])
+                        contador=contador+1
+                    else:
+                        print "esperando"
+                        time.sleep(900)
+                        contador=0
+
+            except Exception as e : 
+                print 'Error subscription lists user: ',user["screen_name"]
+                print e
+                save_listSubscriptions(user["screen_name"], -1)
+
+
+    def hasSubscriptionLists(self,user):
+        try:
+            user['listsSubscriptions']
+            return True
+        except:
+            return False
+            
 def main():
     print 'Process start...'
-    processor = TwitterStreamer(source=SOURCE)
+    processor = TwitterStreamerSubscriptions(source=SOURCE)
     processor.run()
     print 'Exiting now.'
 
