@@ -111,6 +111,32 @@ class MongoDBUtils(object):
         except PyMongoError as e:
             self.logger.error('Error while trying to save user account', exc_info=True)
 
+
+    def get_tweetsTextForBigrams(self):
+
+        try:
+            df = DataFrame(columns=('screen_name', 'tweets', 'age','followers_count',  'tweets_count', 'linkedin', 'snapchat', 'instagram'))
+            # Obtiene una referencia a la instancia de la DB
+            db = self.mongo_client[MONGO_DB_NAME]
+            # Obtiene el ObjectID Mongo del perfil del data source para el usuario
+            col = db[DB_COL_USERS]
+            count=0
+            for user in col.find(): #para cada usuario
+                tweetText=""
+                for tweet in  user['tweets']:
+                    tweetText= tweetText +'. '+ tweet['text']
+                #print user['screen_name']
+                #print user['age']
+                df.loc[count] = [user['screen_name'],tweetText,user['age'],user['followers_count'],len(user['tweets']),user['linkedin'],user['snapchat'],user['instagram'] ]
+                count += 1
+            return df
+
+        except ConnectionFailure as e:
+            self.logger.error('Mongo connection error', exc_info=True)
+        except PyMongoError as e:
+            self.logger.error('Error while trying to save user account', exc_info=True)
+
+
     def get_tweetsTextFromAgeRange(self, ageRange):
 
         try:          
@@ -251,13 +277,13 @@ class MongoDBUtils(object):
                 bio = bio.lower()
                 screen_name = user["screen_name"]
                 
-                if bio.find(u'instagram')!= -1 or bio.find(u'ig:')!= -1 or bio.find(u'insta')!= -1 : 
+                if (bio.find(u'instagram')!= -1 or bio.find(u'ig:')!= -1 or bio.find(u'insta')!= -1) and (not user["instagram"]) : 
                     col.update({'screen_name' : screen_name }, {'$set' : {'instagram' : True }}) 
                     print "Usuario: ", screen_name, " tiene instagram en la bio"
-                if bio.find(u'snap')!= -1 or bio.find(u'snapchat:')!= -1: 
+                if (bio.find(u'snap')!= -1 or bio.find(u'snapchat:')!= -1) and (not user["snapchat"]): 
                     col.update({'screen_name' : screen_name }, {'$set' : {'snapchat' : True }}) 
                     print "Usuario: ", screen_name, " tiene snapchat en la bio"
-                if bio.find(u'linkedin')!= -1: 
+                if bio.find(u'linkedin')!= -1 and (not user["linkedin"]): 
                     col.update({'screen_name' : screen_name }, {'$set' : {'linkedin' : True }}) 
                     print "Usuario: ", screen_name, " tiene linkedin en la bio"
 

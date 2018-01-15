@@ -1,0 +1,259 @@
+\documentclass[12pt,a4paper,oneside]{book}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{listingsutf8}
+\usepackage[utf8]{inputenc}
+%%ORT
+%metadata para la ORT
+\usepackage[unicode,
+            pdftex]{hyperref}
+\hypersetup{
+%acá sólo hay que poner lo que pusimos en la caratula y otras partes 
+ pdfauthor={¡¡¡Nombre - 123456!!!},
+ pdftitle={¡¡¡Titulo que esta en la caratula!!!},
+ pdfsubject={¡¡¡tema/descripción!!!},
+ pdfkeywords={¡¡¡palabras clave que ya pusimos!!!}
+ }
+
+%%posición de la numeración
+\usepackage{fancyhdr}
+\fancypagestyle{plain}{% Redefining plain page style
+  \fancyhf{} %clear all header and footer fields
+  \fancyfoot[RO]{\thepage}
+}%
+\fancyhf{} %clear all header and footer fields
+\fancyfoot[RO]{\thepage}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
+\pagestyle{fancy}
+
+%%Nombre del índice tabla de contenido
+\renewcommand\contentsname{Índice}
+
+%%para incluir imagenes
+\usepackage{graphicx}
+
+%%para la bibliografía
+%%cambia el nombre
+\renewcommand\bibname{Referencias Bibliográficas}
+%%la agrega al indice
+\usepackage[nottoc,numbib]{tocbibind}
+
+%%para los capítulos
+\makeatletter
+\def\@makechapterhead#1{%
+  \vspace*{50\p@}%
+  {\parindent \z@ \raggedright \normalfont
+    \ifnum \c@secnumdepth >\m@ne
+        \huge\bfseries \space \thechapter\space
+    %    \par\nobreak
+    %    \vskip 20\p@
+    \fi
+    \interlinepenalty\@M
+    \Huge \bfseries #1\par\nobreak
+    \vskip 40\p@
+  }}
+  \makeatother
+  
+%%Para hacer Haskell bonito
+%%Cambialo a gusto
+\lstset{
+  frame=none,
+  xleftmargin=2pt,
+  stepnumber=1,
+  numbers=left,
+  numbersep=5pt,
+  %%numberstyle=\ttfamily\tiny\color[gray]{0.3},
+  belowcaptionskip=\bigskipamount,
+  captionpos=b,
+  escapeinside={*'}{'*},
+  language=Haskell,
+  tabsize=2,
+  emphstyle={\bf},
+  commentstyle=\it,
+  stringstyle=\mdseries\rmfamily,
+  showspaces=false,
+  keywordstyle=\small\ttfamily,
+  columns=flexible,
+  basicstyle=\small\ttfamily,
+  showstringspaces=false,
+  morecomment=[l]\%,
+  %%mio:
+  breaklines=true,
+}
+
+%%para poner letras no ascii en el código fuente 
+\lstset{
+  literate=
+           {á}{{\'a}}1
+           {é}{{\'e}}1
+           {í}{{\'i}}1
+           {ó}{{\'o}}1
+           {ú}{{\'u}}1
+           {ñ}{{\~n}}1
+           {Á}{{\'A}}1
+           {É}{{\'E}}1
+           {Í}{{\'I}}1
+           {Ó}{{\'O}}1
+           {Ú}{{\'U}}1
+           {Ñ}{{\~N}}1
+}
+ 
+
+\makeindex
+\begin{document}
+%%\maketitle
+
+
+%%portada:
+\vspace*{\fill}
+
+\begin{center}
+
+\begin{Large}
+\textbf{Universidad ORT Uruguay}
+
+\textbf{Facultad de Ingeniería}
+\bigskip\bigskip\bigskip\bigskip\bigskip\bigskip
+\end{Large}
+
+\begin{huge}
+
+\textbf{Predicción de la edad en las Redes Sociales}
+\end{huge}    
+\bigskip\bigskip\bigskip\bigskip\bigskip\bigskip
+
+
+\begin{Large}
+\textbf{Entregado como requisito para la obtención del título de
+Master en Ingeniería}
+\end{Large}
+\bigskip\bigskip\bigskip\bigskip\bigskip\bigskip\bigskip\bigskip
+
+\begin{Large}
+\textbf{Verónica Tortorella - 153303}
+%el -1 sería el número de alumno de ORT
+\bigskip
+
+\textbf{Tutor: Sergio Yovine}
+\bigskip\bigskip\bigskip\bigskip\bigskip\bigskip
+\end{Large}
+
+\begin{huge}
+\textbf{2018}
+\end{huge}
+
+\end{center}
+\vspace*{\fill}
+
+\thispagestyle{empty}
+\newpage
+\vspace*{\fill}
+Yo, Verónica Tortorella, declaro que el trabajo que se presenta en esta obra es de mi
+propia mano. Puedo asegurar que:
+
+- La obra fue producida en su totalidad mientras realizaba el Proyecto;
+
+- Cuando he consultado el trabajo publicado por otros, lo he atribuido con claridad;
+
+- Cuando he citado obras de otros, he indicado las fuentes. Con excepción de estas citas, la obra es enteramente nuestra;
+
+- En la obra, he acusado recibo de las ayudas recibidas;
+
+- Cuando la obra se basa en trabajo realizado conjuntamente con otros, he explicado claramente qué fue contribuido por otros, y qué fue contribuido por mi;
+
+- Ninguna parte de este trabajo ha sido publicada previamente a su entrega, excepto donde se han realizado las aclaraciones correspondientes.
+\bigskip\bigskip
+
+\vspace*{\fill}
+
+
+\newpage 
+
+{\huge\bfseries \space Abstract}
+\bigskip
+\bigskip
+
+¡¡¡Esto es una plantilla ({\it template}) que sigue el documento 302 de la ORT. La idea es que trabajes sobre esto. Todo lo que tiene tres signos de exclamción de abrir y cerrar debe ser modificado. (Y esos signos deben ser borrados...)!!!
+
+\newpage
+
+{\huge\bfseries \space Palabras clave}
+\bigskip
+\bigskip
+
+¡¡¡Esta es una palabra clave; esta es otra; hay que poner bastantes; separadas por punto y coma; así lo encuentran!!!
+
+\newpage
+
+\tableofcontents
+
+\chapter{Y ahora empezamos}
+
+Hacemos algunas cosas a modo de ejemplo. Todo esto puede ser borrado EXCEPTO por las líneas 
+que dicen: bibliographystyle y bibliography. Esas son necesarias para la bibliografía. Hablando de bibliografía, podes modificar el archivo biblio.bib con nueva bibliografía y después usar las citas así:
+
+
+Al final de esta frase hay una cita.\cite{citalibro}
+En la mitad\cite{citaarticulo} de esta hay otra.
+
+
+\section{Metemos una sección}
+
+Recorda que hay herramientas como {\tt aspell} para corregir la ortografía de documentos latex.
+Si te da problema 
+
+
+\subsection{Yupi! Una subsección.}
+
+Mirá matemáticas!
+\\
+
+$\sqrt{(\lambda x . x x)(\lambda y . y)} = \pi^{\lambda y . y}$
+
+\subsection{Otra subsección}
+
+Mirá código!!
+
+\begin{lstlisting}
+data Proof a = Line a | Link a (Comment) (Proof a)
+-- Este es un comentario del código ÁÉÍÓÚÑ
+\end{lstlisting}\bigskip
+
+\subsection{Y otra más!}
+
+\subsection{Última con lista}
+
+\begin{enumerate}
+\item Acá hay un uno
+\item Ácá hay un dos
+\item Acá hay un tres
+\end{enumerate}
+
+
+\chapter{Hay que meter capítulos}
+
+\chapter{Así se lee más fácil}
+
+\chapter{Palabras finales}
+
+Nunca sobran.
+
+%%bibliography
+%% No borrar estas dos líneas. Revisar de tener los archivos IEEETran y biblio.bib en la misma carpeta
+%% si no están y no anda, correr el compilador de latex varias veces. Primero el bibtex, luego pdflatex, luego pdflatex otra vez.
+\bibliographystyle{IEEEtran}
+\bibliography{biblio}
+
+\chapter{Anexos}
+\section{Un anexo por acá}
+
+Blablabla
+
+\section{Otro por allá}
+
+Blablablal
+
+\end{document}

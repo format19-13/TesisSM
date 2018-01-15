@@ -20,23 +20,12 @@ from stop_words import get_stop_words
 import re
 import imp
 from nltk.corpus import stopwords
+from tabulate import tabulate
+from sklearn.feature_extraction.text import CountVectorizer
 
 ## *********ARMO EL DATASET DE TRAIN Y EL DE TEST *********
 db_access = MongoDBUtils()
-users_df = db_access.get_tweetsText()
-
-
-##https://www.analyticsvidhya.com/blog/2015/06/quick-guide-text-data-cleaning-python/
-##TWEETS CLEANUP
-#https://github.com/myleott/ark-twokenize-py
-#Decode data
-
-for (i,row) in users_df["tweets"].iteritems():
-	result=''
-	result=re.sub(' RT ',"", row)
-	result= re.sub(r"http\S+", "",result)
-	result=re.sub(r'@\w+',"", result)
-	users_df["tweets"][i]=result
+users_df = db_access.get_tweetsTextForBigrams()
 
 # Split into training and test set
 # 80% of the input for training and 20% for testing
@@ -44,12 +33,9 @@ for (i,row) in users_df["tweets"].iteritems():
 train_data=users_df.sample(frac=0.8,random_state=200) 
 test_data=users_df.drop(train_data.index)
 
-##STOPWORDS EN SPANISH, SCIKIT TRAE SOLO EN INGLES
-foo = imp.load_source('stopwords', DIR_PREFIX+'/proyectos/TesisVT/nlp_features/nlp_utils.py')
-stopwords = foo.generateCustomStopwords()  
+bigram_vectorizer = CountVectorizer(ngram_range=(2,3), token_pattern=r'\b\w+\b', min_df=1)
 
-count_vect = CountVectorizer(stop_words=stopwords, max_features=500 ) #Para hacer bag of words
-X_train_counts = count_vect.fit_transform(train_data.tweets)
+X_train_counts = bigram_vectorizer.fit_transform(train_data.tweets)
 # fit_transform() fits the model and learns the vocabulary; second, it transforms our training data
 # into feature vectors. 
 
@@ -64,7 +50,7 @@ train_data_features = X_train_counts.toarray()
 #(186, 500) --> It has 212 rows and 500 features (500 most frequent words).
 
 # Take a look at the words in the vocabulary
-vocab = count_vect.get_feature_names()
+vocab = bigram_vectorizer.get_feature_names()
 #print vocab
 
 # Sum up the counts of each vocabulary word
@@ -96,7 +82,7 @@ bayes = bayes.fit( train_data_features, train_data["age"] )
 # Read the test data
 
 # Get a bag of words for the test set, and convert to a numpy array
-test_data_features = count_vect.transform(test_data.tweets)
+test_data_features = bigram_vectorizer.transform(test_data.tweets)
 test_data_features = test_data_features.toarray()
 
 # Use the random forest to make age range predictions
@@ -114,7 +100,11 @@ output = pd.DataFrame( data={"id":test_data["screen_name"], "realAge":test_data[
 output.to_csv( "Bag_of_Words_model_ForestAndBayes.csv", index=False)
 
 # View a list of the features and their importance scores
-print "Importance of Features: ", list(zip(vocab, forest.feature_importances_))
+#print "Importance of Features: ", sort(zip(train_data_features, forest.feature_importances_))
+
+headers = ["name", "score"]
+values = sorted(zip(vocab, forest.feature_importances_), key=lambda x: x[1] * -1)
+print(tabulate(values, headers, tablefmt="plain"))
 
 ###################################
 #******* MODEL EVALUATION *********
