@@ -168,15 +168,14 @@ class MongoDBUtils(object):
     def get_customFields(self):
 
         try:
-            df = DataFrame(columns=('screen_name', 'followers_count',  'tweets_count', 'linkedin', 'snapchat', 'instagram','age'))
+            df = DataFrame(columns=('screen_name', 'followers_count',  'tweets_count', 'linkedin', 'snapchat', 'instagram','profile_pic_age', 'age'))
             # Obtiene una referencia a la instancia de la DB
             db = self.mongo_client[MONGO_DB_NAME]
             # Obtiene el ObjectID Mongo del perfil del data source para el usuario
             col = db[DB_COL_USERS]
             count=0
             for user in col.find(): #para cada usuario
-                tweetText=""
-                df.loc[count] = [user['screen_name'],user['followers_count'],len(user['tweets']),user['linkedin'],user['snapchat'],user['instagram'],user['age'] ]
+                df.loc[count] = [user['screen_name'],user['followers_count'],len(user['tweets']),user['linkedin'],user['snapchat'],user['instagram'],user['profile_pic_age'], user['age'] ]
                 count += 1
             return df
 

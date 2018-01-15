@@ -17,6 +17,8 @@ def main():
 	db_access = MongoDBUtils()
 	users_df = db_access.get_customFields()
 
+	print users_df
+
 	# Split into training and test set
 	# 80% of the input for training and 20% for testing
 
@@ -26,10 +28,12 @@ def main():
 	# Show the number of observations for the test and training dataframes
 	print 'Number of observations in the training data:', len(train_data)
 	print 'Number of observations in the test data:',len(test_data)
+		
+	# Create a list of the feature column's names (everything but the screen_name and age)
+	features = users_df.columns[1:(len(users_df.columns)-1)]
 
-	# Create a list of the feature column's names
-	features = users_df.columns[1:6]
 
+	print features
 	# convert age ranges into integers
 	y = convertToInt(train_data['age'])
 
@@ -46,7 +50,7 @@ def main():
 	# View the predicted probabilities of the first 10 observations
 	clf.predict_proba(test_data[features])[0:10]
 
-	# Create actual english names for the plants for each predicted plant class
+	# Create actual english names for the ages for each predicted age range
 	preds = convertToCategory(clf.predict(test_data[features]))
 
 	# View the ACTUAL age for the first five observations
