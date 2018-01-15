@@ -237,6 +237,30 @@ class MongoDBUtils(object):
                             col.update({'screen_name' : screen_name }, {'$set' : {'ageRange' : ageRange }})                       
         df.to_csv('labeledUsers.csv', index=False)
 
+    def getUrlsFromBio(self, collection):
+        count=0
+        db = self.mongo_client[MONGO_DB_NAME]
+        col = db[collection]
+        screen_names=""                
+        pathConfig= DIR_PREFIX+'/proyectos/TesisVT/configs/settings.py'
+
+        for user in col.find(): #para cada unlabeled user
+            bio = user['description']
+
+            if user['lang'] == 'es' and isinstance(bio, unicode):
+                bio = bio.lower()
+                screen_name = user["screen_name"]
+                
+                if bio.find(u'instagram')!= -1 or bio.find(u'ig:')!= -1 or bio.find(u'insta')!= -1 : 
+                    col.update({'screen_name' : screen_name }, {'$set' : {'instagram' : True }}) 
+                    print "Usuario: ", screen_name, " tiene instagram en la bio"
+                if bio.find(u'snap')!= -1 or bio.find(u'snapchat:')!= -1: 
+                    col.update({'screen_name' : screen_name }, {'$set' : {'snapchat' : True }}) 
+                    print "Usuario: ", screen_name, " tiene snapchat en la bio"
+                if bio.find(u'linkedin')!= -1: 
+                    col.update({'screen_name' : screen_name }, {'$set' : {'linkedin' : True }}) 
+                    print "Usuario: ", screen_name, " tiene linkedin en la bio"
+
     def getEdad(self,screen_name,collection):
         db = self.mongo_client[MONGO_DB_NAME]
         col = db[collection]

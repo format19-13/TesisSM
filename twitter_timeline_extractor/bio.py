@@ -23,7 +23,11 @@ from nltk.corpus import stopwords
 
 def etiquetarUsuarios():
 	db_access = MongoDBUtils()
-	users_df = db_access.getBioWithAge("unlabeled_users")
+	
+	print "Etiquetando usuarios con la edad en la bio......"
+	db_access.getBioWithAge("unlabeled_users")
 
+	print "Populando instagram, snapchat y linkedin a partir de la bio..."
+	db_access.getUrlsFromBio("users")
 
 
