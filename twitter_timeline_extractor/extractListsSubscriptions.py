@@ -40,7 +40,7 @@ class TwitterStreamerSubscriptions(Twython):
         contador=1
         for user in users:
             try:
-                if True: # not self.hasSubscriptionLists(user):
+                if not self.hasSubscriptionLists(user):
 
                     if contador < 15:
                         contador = contador + 1
