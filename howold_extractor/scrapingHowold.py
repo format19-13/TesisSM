@@ -18,17 +18,17 @@ def analyzeProfilePicture():
 			print "-----------------------"
 
 			profilePic=user["profile_image_url_https"].replace("normal", "400x400")
-			age= getAgeFromProfilePicture(user['screen_name'],profilePic)
+			age= getAgeGenderFromProfilePicture(user['screen_name'],profilePic)
 
 			print user['screen_name'], ' - ' , age 
 
-			if cont%19==0 :
+			if cont%18==0 :
 				print "Esperando..."
 				time.sleep(60) 
 
-			db_access.set_profilePic_age_user(user['screen_name'],age)
-
-def getAgeFromProfilePicture(screen_name,image):
+def getAgeGenderFromProfilePicture(screen_name,image):
+	db_access = MongoDBUtils()
+	users = db_access.get_users('users')
 	KEY = '568aebd6112041fb8055d8e583f78f94'  # Replace with a valid subscription key (keeping the quotes in place).
 	CF.Key.set(KEY)
 	#KEY: https://azure.microsoft.com/en-us/try/cognitive-services/?apiSlug=face-api&country=Uruguay&allowContact=true
@@ -40,24 +40,29 @@ def getAgeFromProfilePicture(screen_name,image):
 
 	# You can use this example JPG or replace the URL below with your own URL to a JPEG image.
 	img_url = image
-	result = -1
+	resultAge = -1
+	resultGender = -1
+	
 	try:
-		faces = CF.face.detect(img_url,False, False,'age')
+		faces = CF.face.detect(img_url,False, False,'age,gender')
 		#print faces
 		#print "age: ", faces[0]['faceAttributes']['age']
 		if len(faces) >0:
-			result= int(round(faces[0]['faceAttributes']['age'],0))
+			resultAge= int(round(faces[0]['faceAttributes']['age'],0))
+			resultGender=faces[0]['faceAttributes']['gender']
 	except Exception as ex:
 		print "User: ",screen_name," - Error while calculating age from profile pic: ", image
 		print ex
 
-	if result ==-1:
+	if resultAge ==-1:
 		streamer=TwitterStreamer(Twython)
 		newProfilePic= streamer.getLatestProfilePic(screen_name,image)
 		isNew = image != newProfilePic
 		print "profile pic updated: " , isNew
 
 		if isNew:
-			result= getAgeFromProfilePicture(screen_name,newProfilePic)
-			print result
-	return result
+			resultAge= getAgeGenderFromProfilePicture(screen_name,newProfilePic)
+			print resultAge
+
+	db_access.set_profilePic_age_gender_user(screen_name,resultAge,resultGender)
+	return resultAge

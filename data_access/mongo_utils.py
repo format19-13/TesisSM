@@ -72,16 +72,18 @@ class MongoDBUtils(object):
                 print "Se salvo usuario: ", document["screen_name"]
                 
 
-    def set_age_user(self, screen_name,age):
+    def set_age_user(self, screen_name,age,gender):
             db = self.mongo_client[MONGO_DB_NAME]
             col = db[DB_COL_USERS]
             col.update({'screen_name' : screen_name }, {'$set' : {'age' : age }})
 
-    def set_profilePic_age_user(self, screen_name,age):
+    def set_profilePic_age_gender_user(self, screen_name,age,gender):
             db = self.mongo_client[MONGO_DB_NAME]
             col = db[DB_COL_USERS]
+            print screen_name, " - ",  gender
             col.update({'screen_name' : screen_name }, {'$set' : {'profile_pic_age' : age }})
-
+            col.update({'screen_name' : screen_name }, {'$set' : {'profile_pic_gender' : gender }})
+    
     def updateProfilePicture(self, screen_name,imageUrl):
             db = self.mongo_client[MONGO_DB_NAME]
             col = db[DB_COL_USERS]
@@ -346,6 +348,43 @@ class MongoDBUtils(object):
         
         try:
             user['profile_pic_age']
-            return True #user[profile_pic_age] != -1
+            return user["profile_pic_age"] != -1#True #
         except:
             return False
+
+    def export_tweetsLabeled(self):
+        # Obtiene una referencia a la instancia de la DB
+        db = self.mongo_client[MONGO_DB_NAME]
+        # Obtiene el ObjectID Mongo del perfil del data source para el usuario
+        col = db[DB_COL_USERS]
+
+        colUnlabeled = db["unlabeled_users"]
+
+        df = DataFrame(columns=('screen_name', 'tweet text','age', 'ageRange','profile_pic_age'))
+        #print 'screen_name',',', 'tweet text',',','age',',', 'ageRange',',','profile_pic_age'
+        count=0
+        for user in col.find(): #para cada usuario
+            ageReal=-1
+            try:
+                regx = re.compile(user['screen_name'], re.IGNORECASE)
+                userLabeled=colUnlabeled.find({"screen_name": regx})
+
+                for userL in userLabeled:
+                    ageReal=userL['age']
+
+            except Exception as a:
+                #print "Error with user: ", user['screen_name'], " while getting real age"
+                #print a
+                pass
+
+            for tweet in  user['tweets']:
+                try:
+                    df.loc[count] = [user['screen_name'],tweet['text'],ageReal, user['age'],user['profile_pic_age'] ]
+                    #print user['screen_name'],",",tweet['text'],",",ageReal,",", user['age'],",",user['profile_pic_age']
+                    count += 1
+                except Exception as a:
+                    #print "Error with user: ", user['screen_name'] 
+                    #print a
+                    pass
+        print "Generando el archivo tweetsLabeled.csv.."
+        df.to_csv('tweetsLabeled.csv', index=False, encoding='utf-8')
