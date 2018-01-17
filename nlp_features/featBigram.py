@@ -27,13 +27,20 @@ from sklearn.feature_extraction.text import CountVectorizer
 db_access = MongoDBUtils()
 users_df = db_access.get_tweetsTextForBigrams()
 
+for (i,row) in users_df["tweets"].iteritems():
+	result=''
+	result=re.sub(' RT ',"", row)
+	result= re.sub(r"http\S+", "",result)
+	result=re.sub(r'@\w+',"", result)
+	users_df["tweets"][i]=result.encode("utf-8").decode("utf-8")
+
 # Split into training and test set
 # 80% of the input for training and 20% for testing
 
 train_data=users_df.sample(frac=0.8,random_state=200) 
 test_data=users_df.drop(train_data.index)
 
-bigram_vectorizer = CountVectorizer(ngram_range=(2,3), token_pattern=r'\b\w+\b', min_df=1)
+bigram_vectorizer = CountVectorizer(ngram_range=(2,3), token_pattern=r'\b\w+\b', min_df=1,strip_accents='unicode',max_features=500) 
 
 X_train_counts = bigram_vectorizer.fit_transform(train_data.tweets)
 # fit_transform() fits the model and learns the vocabulary; second, it transforms our training data
@@ -97,7 +104,7 @@ output = pd.DataFrame( data={"id":test_data["screen_name"], "realAge":test_data[
 #print output
 
 # Use pandas to write the comma-separated output file
-output.to_csv( "Bag_of_Words_model_ForestAndBayes.csv", index=False)
+output.to_csv( "Bigram_model_ForestAndBayes.csv", index=False)
 
 # View a list of the features and their importance scores
 #print "Importance of Features: ", sort(zip(train_data_features, forest.feature_importances_))
