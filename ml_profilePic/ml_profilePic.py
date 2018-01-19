@@ -10,9 +10,10 @@ from data_access.mongo_utils import MongoDBUtils
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import confusion_matrix
 import itertools
+import time
 import matplotlib.pyplot as plt
 
-def main():
+def main_profilePic():
 	## *********ARMO EL DATASET DE TRAIN Y EL DE TEST *********
 	db_access = MongoDBUtils()
 	users_df = db_access.get_profilePicAgeDataset()
@@ -53,26 +54,33 @@ def main():
 	# Create actual english names for the ages for each predicted age range
 	preds = convertToCategory(clf.predict(test_data[features]))
 
+	outdir =time.strftime("%d-%m-%Y")
+	
+	if not os.path.exists(outdir):
+   		os.mkdir(outdir)
+
 	# View the ACTUAL age for the first five observations
 	#print test_data['age'].head()
 
 	#create confusion matrix: anything on the diagonal was classified correctly and the rest incorrectly.
 	cnf_matrix =confusion_matrix(test_data['age'].tolist(), preds)
-	print "Confusion Matrix: ", cnf_matrix
+	#print "Confusion Matrix: ", cnf_matrix
 
 	# Plot non-normalized confusion matrix
 	fig2 = plt.figure()
-	plot_confusion_matrix(cnf_matrix, classes=db_access.getAgeRanges(),
-	                      title='Confusion matrix, without normalization')
-	fig2.savefig('confusionMatrixNotNormalized.png')
+	#plot_confusion_matrix(cnf_matrix, classes=db_access.getAgeRanges(),title='Confusion matrix, without normalization for profile pic')
+	outname = 'ml_profilePic_confusionMatrixNotNormalized.png'
+	fullname = os.path.join(outdir, outname)    
+	fig2.savefig(fullname)
 
 	# Plot normalized confusion matrix
 	fig3 = plt.figure()
-	plot_confusion_matrix(cnf_matrix, classes=db_access.getAgeRanges(), normalize=True,
-                      title='Normalized confusion matrix')
-	fig3.savefig('confusionMatrixNotNormalized.png')
+	#plot_confusion_matrix(cnf_matrix, classes=db_access.getAgeRanges(), normalize=True,title='Normalized confusion matrix for profile pic')
+	outname = 'ml_profilePic_confusionMatrixNormalized.png'
+	fullname = os.path.join(outdir, outname)    
+	fig3.savefig(fullname)
 
-	plt.show()
+	#plt.show()
 
 	# View a list of the features and their importance scores
 	print "Importance of Features: ", list(zip(train_data[features], clf.feature_importances_))
@@ -82,7 +90,9 @@ def main():
 	#print output
 
 	# Use pandas to write the comma-separated output file
-	output.to_csv( "RandomForest.csv", index=False)
+	outname = 'ml_profilePic_result.csv'
+	fullname = os.path.join(outdir, outname)    
+	output.to_csv(fullname,index=False)
 
 def convertToInt(ageRanges):
 	db_access = MongoDBUtils()
@@ -110,9 +120,9 @@ def plot_confusion_matrix(cm, classes,
     """
     if normalize:
         cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
-        print("Normalized confusion matrix")
+        print("Normalized confusion matrix for profile pic")
     else:
-        print('Confusion matrix, without normalization')
+        print('Confusion matrix, without normalization for profile pic')
 
     print(cm)
 
@@ -135,7 +145,7 @@ def plot_confusion_matrix(cm, classes,
     plt.xlabel('Predicted label')
 
 if __name__ == '__main__':
-    main()
+    main_profilePic()
 
     #https://chrisalbon.com/machine-learning/random_forest_classifier_example_scikit.html
     #http://scikit-learn.org/stable/auto_examples/model_selection/plot_confusion_matrix.html#sphx-glr-auto-examples-model-selection-plot-confusion-matrix-py
