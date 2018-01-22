@@ -138,6 +138,28 @@ class MongoDBUtils(object):
         except PyMongoError as e:
             self.logger.error('Error while trying to save user account', exc_info=True)
 
+    def get_SubscriptionLists(self):
+        df = DataFrame(columns=('screen_name', 'subscriptionLists', 'age'))
+        # Obtiene una referencia a la instancia de la DB
+        db = self.mongo_client[MONGO_DB_NAME]
+        # Obtiene el ObjectID Mongo del perfil del data source para el usuario
+        col = db[DB_COL_USERS]
+        count=0
+           
+        for user in col.find(): #para cada usuario
+            subsLists=""
+            try:
+                if user['listsSubscriptions'] != -1 and len(user['listsSubscriptions']) >0:
+                    for lstSub in user['listsSubscriptions']:
+                        subsLists= subsLists +' '+ lstSub['name']
+            except Exception as e:
+                print user['screen_name']
+                print e
+            
+            df.loc[count] = [user['screen_name'],subsLists,user['age']]
+            count += 1
+        return df
+
 
     def get_tweetsTextFromAgeRange(self, ageRange):
 
