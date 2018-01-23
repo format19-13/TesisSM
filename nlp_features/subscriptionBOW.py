@@ -22,6 +22,7 @@ import imp
 import time
 from nltk.corpus import stopwords
 from tabulate import tabulate
+import matplotlib.pyplot as plt
 
 def main_subscriptionBOW():
 
@@ -121,16 +122,53 @@ def main_subscriptionBOW():
 	###################################
 	#******* MODEL EVALUATION *********
 	###################################
+	import ml_utils as ml_utils
 
 	#create confusion matrix: anything on the diagonal was classified correctly and the rest incorrectly.
 	cnf_matrix =confusion_matrix(test_data['age'].tolist(), resultForest)
 	print "Confusion Matrix for Random Forest: "
 	print cnf_matrix
 
+	# Plot non-normalized confusion matrix
+	fig2 = plt.figure()
+	ml_utils.plot_confusion_matrix(cnf_matrix, classes=db_access.getAgeRanges(),
+	                    title='Confusion matrix, without normalization for Subscription BOW - Random Forest')
+	
+	outname = 'ml_subscriptionBOW_randomForest_confusionMatrixNotNormalized.png'
+	fullname = os.path.join(outdir, outname)    
+	fig2.savefig(fullname)
+
+	# Plot normalized confusion matrix
+	fig3 = plt.figure()
+	ml_utils.plot_confusion_matrix(cnf_matrix, classes=db_access.getAgeRanges(), normalize=True,
+                    title='Normalized confusion matrix for Subscription BOW - Random Forest')
+	
+	outname = 'ml_subscriptionBOW_randomForest_confusionMatrixNormalized.png'
+	fullname = os.path.join(outdir, outname)
+	fig3.savefig(fullname)
+
 	cnf_matrix2 =confusion_matrix(test_data['age'].tolist(), resultBayes)
 	print "Confusion Matrix for Naive Bayes: "
 	print cnf_matrix2
 
+	# Plot non-normalized confusion matrix
+	fig2 = plt.figure()
+	ml_utils.plot_confusion_matrix(cnf_matrix, classes=db_access.getAgeRanges(),
+	                    title='Confusion matrix, without normalization for Subscription BOW - Bayes')
+	
+	outname = 'ml_subscriptionBOW_Bayes_confusionMatrixNotNormalized.png'
+	fullname = os.path.join(outdir, outname)    
+	fig2.savefig(fullname)
+
+	# Plot normalized confusion matrix
+	fig3 = plt.figure()
+	ml_utils.plot_confusion_matrix(cnf_matrix, classes=db_access.getAgeRanges(), normalize=True,
+                    title='Normalized confusion matrix for Subscription BOW - Bayes')
+	
+	outname = 'ml_subscriptionBOW_Bayes_confusionMatrixNormalized.png'
+	fullname = os.path.join(outdir, outname)
+	fig3.savefig(fullname)
+
 if __name__ == '__main__':
-    main_featBOW()
+    main_subscriptionBOW()
 

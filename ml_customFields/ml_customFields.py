@@ -31,10 +31,11 @@ def main_customFields():
 	# Create a list of the feature column's names (everything but the screen_name and age)
 	features = users_df.columns[1:(len(users_df.columns)-1)]
 
+	import ml_utils as ml_utils
 
 	print features
 	# convert age ranges into integers
-	y = convertToInt(train_data['age'])
+	y = ml_utils.convertToInt(train_data['age'])
 
 	# Create a random forest Classifier.
 	clf = RandomForestClassifier(n_jobs=2, random_state=0)
@@ -50,7 +51,7 @@ def main_customFields():
 	clf.predict_proba(test_data[features])[0:10]
 
 	# Create actual english names for the ages for each predicted age range
-	preds = convertToCategory(clf.predict(test_data[features]))
+	preds = ml_utils.convertToCategory(clf.predict(test_data[features]))
 
 	# View the ACTUAL age for the first five observations
 	#print test_data['age'].head()
@@ -66,8 +67,8 @@ def main_customFields():
 
 	# Plot non-normalized confusion matrix
 	fig2 = plt.figure()
-	#plot_confusion_matrix(cnf_matrix, classes=db_access.getAgeRanges(),
-	 #                     title='Confusion matrix, without normalization for custom fields')
+	ml_utils.plot_confusion_matrix(cnf_matrix, classes=db_access.getAgeRanges(),
+	                    title='Confusion matrix, without normalization for custom fields')
 	
 	outname = 'ml_customFields_confusionMatrixNotNormalized.png'
 	fullname = os.path.join(outdir, outname)    
@@ -75,8 +76,8 @@ def main_customFields():
 
 	# Plot normalized confusion matrix
 	fig3 = plt.figure()
-	#plot_confusion_matrix(cnf_matrix, classes=db_access.getAgeRanges(), normalize=True,
-      #                title='Normalized confusion matrix for custom fields')
+	ml_utils.plot_confusion_matrix(cnf_matrix, classes=db_access.getAgeRanges(), normalize=True,
+                    title='Normalized confusion matrix for custom fields')
 	
 	outname = 'ml_customFields_confusionMatrixNormalized.png'
 	fullname = os.path.join(outdir, outname)
@@ -94,56 +95,6 @@ def main_customFields():
 	outname = 'ml_customFields_result.csv'
 	fullname = os.path.join(outdir, outname)    
 	output.to_csv(fullname,index=False)
-
-def convertToInt(ageRanges):
-	db_access = MongoDBUtils()
-	ages = db_access.getAgeRanges()
-	result=[]
-	for ar in ageRanges:
-		result.append(ages.index(ar))
-	return result
-
-def convertToCategory(ageRanges):
-	db_access = MongoDBUtils()
-	ages = db_access.getAgeRanges()
-	result=[]
-	for ar in ageRanges:
-		result.append(ages[ar].encode("utf-8"))
-	return result
-
-def plot_confusion_matrix(cm, classes,
-                          normalize=False,
-                          title='Confusion matrix',
-                          cmap=plt.cm.Blues):
-    """
-    This function prints and plots the confusion matrix.
-    Normalization can be applied by setting `normalize=True`.
-    """
-    if normalize:
-        cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
-        print("Normalized confusion matrix for custom fields")
-    else:
-        print('Confusion matrix, without normalization for custom fields')
-
-    print(cm)
-
-    plt.imshow(cm, interpolation='nearest', cmap=cmap)
-    plt.title(title)
-    plt.colorbar()
-    tick_marks = np.arange(len(classes))
-    plt.xticks(tick_marks, classes, rotation=45)
-    plt.yticks(tick_marks, classes)
-
-    fmt = '.2f' if normalize else 'd'
-    thresh = cm.max() / 2.
-    for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
-        plt.text(j, i, format(cm[i, j], fmt),
-                 horizontalalignment="center",
-                 color="white" if cm[i, j] > thresh else "black")
-
-    plt.tight_layout()
-    plt.ylabel('True label')
-    plt.xlabel('Predicted label')
 
 if __name__ == '__main__':
     main_customFields()
