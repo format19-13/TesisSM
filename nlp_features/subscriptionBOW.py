@@ -107,6 +107,10 @@ def main_subscriptionBOW():
 	output = pd.DataFrame( data={"id":test_data["screen_name"], "realAge":test_data["age"], "ageRandomForest":resultForest,"ageNaiveBayes":resultBayes})
 	#print output
 
+	accuracyRF = accuracy_score(test_data['age'].tolist(), resultForest)
+	accuracyNB = accuracy_score(test_data['age'].tolist(), resultBayes)
+	accuracy= max(accuracyRF,accuracyNB)
+
 	# Use pandas to write the comma-separated output file
 	outname = 'subscriptionLists_Bag_of_Words_ForestAndBayes.csv'
 	fullname = os.path.join(outdir, outname)    
@@ -168,6 +172,8 @@ def main_subscriptionBOW():
 	outname = 'ml_subscriptionBOW_Bayes_confusionMatrixNormalized.png'
 	fullname = os.path.join(outdir, outname)
 	fig3.savefig(fullname)
+
+	return accuracy
 
 if __name__ == '__main__':
     main_subscriptionBOW()

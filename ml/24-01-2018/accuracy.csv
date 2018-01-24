@@ -1,0 +1,5 @@
+Method,Accuracy
+Custom Fields,0.456989247312
+Subscription List BOW,0.403225806452
+Tweets BOW,0.516129032258
+Tweets Bigram,0.483870967742

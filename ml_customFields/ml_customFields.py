@@ -9,6 +9,7 @@ from configs.settings import *
 from data_access.mongo_utils import MongoDBUtils
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import confusion_matrix
+from sklearn.metrics import accuracy_score
 import itertools
 import time
 import matplotlib.pyplot as plt
@@ -92,9 +93,12 @@ def main_customFields():
 	output = pd.DataFrame( data={"id":test_data["screen_name"], "predicted age":preds,"realAge":test_data["age"]})
 	#print output
 
+	accuracy = accuracy_score(test_data['age'].tolist(), preds)
 	outname = 'ml_customFields_result.csv'
 	fullname = os.path.join(outdir, outname)    
 	output.to_csv(fullname,index=False)
+
+	return accuracy
 
 if __name__ == '__main__':
     main_customFields()

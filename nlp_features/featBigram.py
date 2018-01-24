@@ -111,6 +111,10 @@ def main_featBigram():
 	output = pd.DataFrame( data={"id":test_data["screen_name"], "realAge":test_data["age"], "ageRandomForest":resultForest,"ageNaiveBayes":resultBayes})
 	#print output
 
+	accuracyRF = accuracy_score(test_data['age'].tolist(), resultForest)
+	accuracyNB = accuracy_score(test_data['age'].tolist(), resultBayes)
+	accuracy= max(accuracyRF,accuracyNB)
+
 	# Use pandas to write the comma-separated output file
 	outname = 'Bigram_model_ForestAndBayes.csv'
 	fullname = os.path.join(outdir, outname)    
@@ -174,6 +178,7 @@ def main_featBigram():
 	fullname = os.path.join(outdir, outname)
 	fig3.savefig(fullname)
 
+	return accuracy
 
 if __name__ == '__main__':
     main_featBigram()
