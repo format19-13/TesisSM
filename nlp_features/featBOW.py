@@ -12,6 +12,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn import svm, datasets
 from sklearn.model_selection import cross_val_score
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.neural_network import MLPClassifier
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import confusion_matrix
 from sklearn.metrics import classification_report
@@ -108,6 +109,13 @@ def main_featBOW():
 
 	resultBayes = bayes.predict(test_data_features)
 
+
+	clfMLP = MLPClassifier(hidden_layer_sizes=(100,100,100), max_iter=10000, alpha=0.0001,
+                     solver='sgd', verbose=10,  random_state=21,tol=0.000000001)
+
+	clfMLP.fit(train_data_features, train_data["age"])
+	predsMLP = clfMLP.predict(test_data_features)
+
 	# Copy the results to a pandas dataframe with an "id" column and
 	# a "age" column
 
@@ -118,10 +126,6 @@ def main_featBOW():
 
 	output = pd.DataFrame( data={"id":test_data["screen_name"], "realAge":test_data["age"], "ageRandomForest":resultForest,"ageNaiveBayes":resultBayes})
 	#print output
-
-	accuracyRF = accuracy_score(test_data['age'].tolist(), resultForest)
-	accuracyNB = accuracy_score(test_data['age'].tolist(), resultBayes)
-	accuracy= max(accuracyRF,accuracyNB)
 
 	# Use pandas to write the comma-separated output file
 	outname = 'Bag_of_Words_model_ForestAndBayes.csv'
@@ -141,10 +145,13 @@ def main_featBOW():
 
 	import ml_utils as ml_utils
 	
+	##RANDOM FOREST
+	###############
+
 	#create confusion matrix: anything on the diagonal was classified correctly and the rest incorrectly.
 	cnf_matrix =confusion_matrix(test_data['age'].tolist(), resultForest)
-	print "Confusion Matrix for Random Forest: "
-	print cnf_matrix
+	#print "Confusion Matrix for Random Forest: "
+	#print cnf_matrix
 
 	# Plot non-normalized confusion matrix
 	fig2 = plt.figure()
@@ -164,13 +171,16 @@ def main_featBOW():
 	fullname = os.path.join(outdir, outname)
 	fig3.savefig(fullname)
 
+	##BAYES
+	###############
+
 	cnf_matrix2 =confusion_matrix(test_data['age'].tolist(), resultBayes)
-	print "Confusion Matrix for Naive Bayes: "
-	print cnf_matrix2
+	#print "Confusion Matrix for Naive Bayes: "
+	#print cnf_matrix2
 
 	# Plot non-normalized confusion matrix
 	fig2 = plt.figure()
-	ml_utils.plot_confusion_matrix(cnf_matrix, classes=db_access.getAgeRanges(),
+	ml_utils.plot_confusion_matrix(cnf_matrix2, classes=db_access.getAgeRanges(),
 	                    title='Confusion matrix, without normalization for Feat BOW - Bayes')
 	
 	outname = 'ml_featBOW_Bayes_confusionMatrixNotNormalized.png'
@@ -179,14 +189,42 @@ def main_featBOW():
 
 	# Plot normalized confusion matrix
 	fig3 = plt.figure()
-	ml_utils.plot_confusion_matrix(cnf_matrix, classes=db_access.getAgeRanges(), normalize=True,
+	ml_utils.plot_confusion_matrix(cnf_matrix2, classes=db_access.getAgeRanges(), normalize=True,
                     title='Normalized confusion matrix for Feat BOW - Bayes')
 	
 	outname = 'ml_featBOW_Bayes_confusionMatrixNormalized.png'
 	fullname = os.path.join(outdir, outname)
 	fig3.savefig(fullname)
 
-	return accuracy
+	##NEURAL NETWORK
+	###############
+	cnf_matrix3 =confusion_matrix(test_data['age'].tolist(), predsMLP)
+	print "Confusion Matrix for Neural Network: "
+	print cnf_matrix3
+
+	# Plot non-normalized confusion matrix
+	fig4 = plt.figure()
+	ml_utils.plot_confusion_matrix(cnf_matrix3, classes=db_access.getAgeRanges(),
+	                    title='Confusion matrix, without normalization for Feat BOW - NeuralNetwork')
+	
+	outname = 'ml_featBOW_NeuralN_confusionMatrixNotNormalized.png'
+	fullname = os.path.join(outdir, outname)    
+	fig4.savefig(fullname)
+
+	# Plot normalized confusion matrix
+	fig5 = plt.figure()
+	ml_utils.plot_confusion_matrix(cnf_matrix3, classes=db_access.getAgeRanges(), normalize=True,
+                    title='Normalized confusion matrix for Feat BOW - NeuralNetwork')
+	
+	outname = 'ml_featBOW_NeuralN_confusionMatrixNormalized.png'
+	fullname = os.path.join(outdir, outname)
+	fig5.savefig(fullname)
+
+	accuracyRF = accuracy_score(test_data['age'].tolist(), resultForest)
+	accuracyNB = accuracy_score(test_data['age'].tolist(), resultBayes)
+	accuracyMLP = accuracy_score(test_data['age'].tolist(), predsMLP)
+
+	return "Bayes:",accuracyNB,"|RForest:", accuracyRF,"|NeuralN:", accuracyMLP
 
 if __name__ == '__main__':
     main_featBOW()

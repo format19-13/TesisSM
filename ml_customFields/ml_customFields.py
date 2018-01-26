@@ -10,6 +10,8 @@ from data_access.mongo_utils import MongoDBUtils
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import confusion_matrix
 from sklearn.metrics import accuracy_score
+from sklearn.neural_network import MLPClassifier
+from sklearn.naive_bayes import MultinomialNB
 import itertools
 import time
 import matplotlib.pyplot as plt
@@ -34,44 +36,60 @@ def main_customFields():
 
 	import ml_utils as ml_utils
 
-	print features
 	# convert age ranges into integers
 	y = ml_utils.convertToInt(train_data['age'])
 
 	# Create a random forest Classifier.
-	clf = RandomForestClassifier(n_jobs=2, random_state=0)
-
+	rforest = RandomForestClassifier(n_jobs=2, random_state=0)
+	
+	# Initialize Multinomial Naive Bayes
+	bayes = MultinomialNB()
 
 	# Train the Classifier to take the training features and learn how they relate to the age
-	clf.fit(train_data[features], y)
+	rforest.fit(train_data[features], y)
+	bayes.fit( train_data[features], y ) 
 
 	# Apply the Classifier we trained to the test data
-	clf.predict(test_data[features])
-
-	# View the predicted probabilities of the first 10 observations
-	clf.predict_proba(test_data[features])[0:10]
-
 	# Create actual english names for the ages for each predicted age range
-	preds = ml_utils.convertToCategory(clf.predict(test_data[features]))
+	resultForest = ml_utils.convertToCategory(rforest.predict(test_data[features]))
+	resultBayes = ml_utils.convertToCategory(bayes.predict(test_data[features]))
+	
+	# View the predicted probabilities of the first 10 observations
+	rforest.predict_proba(test_data[features])[0:10]
 
 	# View the ACTUAL age for the first five observations
 	#print test_data['age'].head()
+
+	clfMLP = MLPClassifier(hidden_layer_sizes=(100,100,100), max_iter=500, alpha=0.0001,
+                     solver='sgd', verbose=10,  random_state=21,tol=0.000000001)
+
+	clfMLP.fit(train_data[features], y)
+	predsMLP = clfMLP.predict(test_data[features])
+
+	print "accuracy mlp - " , accuracy_score(test_data['age'].tolist(), predsMLP)
+
+	#############################################
+	# EVALUATE THE MODEL
+	#############################################
 
 	outdir =time.strftime("%d-%m-%Y")
 	
 	if not os.path.exists(outdir):
    		os.mkdir(outdir)
 
+   	##RFOREST
+   	#########
+
 	#create confusion matrix: anything on the diagonal was classified correctly and the rest incorrectly.
-	cnf_matrix =confusion_matrix(test_data['age'].tolist(), preds)
-	print "Confusion Matrix: ", cnf_matrix
+	cnf_matrix =confusion_matrix(test_data['age'].tolist(), resultForest)
+	#print "Confusion Matrix: ", cnf_matrix
 
 	# Plot non-normalized confusion matrix
 	fig2 = plt.figure()
 	ml_utils.plot_confusion_matrix(cnf_matrix, classes=db_access.getAgeRanges(),
 	                    title='Confusion matrix, without normalization for custom fields')
 	
-	outname = 'ml_customFields_confusionMatrixNotNormalized.png'
+	outname = 'ml_customFields_RF_confusionMatrixNotNormalized.png'
 	fullname = os.path.join(outdir, outname)    
 	fig2.savefig(fullname)
 
@@ -80,25 +98,52 @@ def main_customFields():
 	ml_utils.plot_confusion_matrix(cnf_matrix, classes=db_access.getAgeRanges(), normalize=True,
                     title='Normalized confusion matrix for custom fields')
 	
-	outname = 'ml_customFields_confusionMatrixNormalized.png'
+	outname = 'ml_customFields_RF_confusionMatrixNormalized.png'
 	fullname = os.path.join(outdir, outname)
 	fig3.savefig(fullname)
 
-	#plt.show()
+	##BAYES
+	########
+
+	#create confusion matrix: anything on the diagonal was classified correctly and the rest incorrectly.
+	cnf_matrix2 =confusion_matrix(test_data['age'].tolist(), resultBayes)
+	#print "Confusion Matrix: ", cnf_matrix2
+
+	# Plot non-normalized confusion matrix
+	fig4 = plt.figure()
+	ml_utils.plot_confusion_matrix(cnf_matrix2, classes=db_access.getAgeRanges(),
+	                    title='Confusion matrix, without normalization for custom fields')
+	
+	outname = 'ml_customFields_BAYES_confusionMatrixNotNormalized.png'
+	fullname = os.path.join(outdir, outname)    
+	fig4.savefig(fullname)
+
+	# Plot normalized confusion matrix
+	fig5 = plt.figure()
+	ml_utils.plot_confusion_matrix(cnf_matrix2, classes=db_access.getAgeRanges(), normalize=True,
+                    title='Normalized confusion matrix for custom fields')
+	
+	outname = 'ml_customFields_BAYES_confusionMatrixNormalized.png'
+	fullname = os.path.join(outdir, outname)
+	fig5.savefig(fullname)
 
 	# View a list of the features and their importance scores
-	print "Importance of Features: ", list(zip(train_data[features], clf.feature_importances_))
+	print "Importance of Features: ", list(zip(train_data[features], rforest.feature_importances_))
 
 	# Copy the results to a pandas dataframe 
-	output = pd.DataFrame( data={"id":test_data["screen_name"], "predicted age":preds,"realAge":test_data["age"]})
+	output = pd.DataFrame( data={"id":test_data["screen_name"], "realAge":test_data["age"], "ageRandomForest":resultForest,"ageNaiveBayes":resultBayes})
 	#print output
 
-	accuracy = accuracy_score(test_data['age'].tolist(), preds)
 	outname = 'ml_customFields_result.csv'
 	fullname = os.path.join(outdir, outname)    
 	output.to_csv(fullname,index=False)
 
-	return accuracy
+	accuracyRF = accuracy_score(test_data['age'].tolist(), resultForest)
+	accuracyNB = accuracy_score(test_data['age'].tolist(), resultBayes)
+	accuracyMLP = accuracy_score(test_data['age'].tolist(), predsMLP)
+
+	print "Bayes:",accuracyNB,"|RForest:", accuracyRF,"|NeuralN:", accuracyMLP
+	return "Bayes:",accuracyNB,"|RForest:", accuracyRF,"|NeuralN:", accuracyMLP
 
 if __name__ == '__main__':
     main_customFields()

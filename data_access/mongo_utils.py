@@ -220,19 +220,19 @@ class MongoDBUtils(object):
     def get_customFields(self):
 
         try:
-            df = DataFrame(columns=('screen_name', 'followers_count',  'tweets_count', 'linkedin', 'snapchat', 'instagram','friends_count','favourites_count', 'followers_count','profile_pic_gender','age'))
+            df = DataFrame(columns=('screen_name', 'friends_count',  'tweets_count', 'linkedin', 'snapchat', 'instagram','followers_count','favourites_count', 'profile_pic_gender','age'))
             # Obtiene una referencia a la instancia de la DB
             db = self.mongo_client[MONGO_DB_NAME]
             # Obtiene el ObjectID Mongo del perfil del data source para el usuario
             col = db[DB_COL_USERS]
             count=0
             for user in col.find(): #para cada usuario
-                gender=-1
+                gender=0
                 if user['profile_pic_gender'] == 'male' :
                     gender=1
                 elif user['profile_pic_gender'] == 'female' :
-                    gender=0
-                df.loc[count] = [user['screen_name'],user['followers_count'],len(user['tweets']),user['linkedin'],user['snapchat'],user['instagram'],user['friends_count'],user['favourites_count'],user['followers_count'], gender,user['age'] ]
+                    gender=2
+                df.loc[count] = [user['screen_name'],user['friends_count'],len(user['tweets']),user['linkedin'],user['snapchat'],user['instagram'],user['followers_count'],user['favourites_count'], gender,user['age'] ]
                 count += 1
             return df
 
