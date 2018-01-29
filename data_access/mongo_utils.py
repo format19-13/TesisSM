@@ -1,6 +1,6 @@
 #!/usr/bin/python
 # -*- coding: utf8 -*-
-
+from __future__ import division
 import os,sys
 import os.path
 from pandas import DataFrame
@@ -61,6 +61,22 @@ class MongoDBUtils(object):
         except PyMongoError as e:
             self.logger.error('Error while trying to sace user account', exc_info=True)
 
+    def get_user(self,collection,screen_name):
+        try:
+
+            # Obtiene una referencia a la instancia de la DB
+            db = self.mongo_client[MONGO_DB_NAME]
+            # Obtiene el ObjectID Mongo del perfil del data source para el usuario
+            col = db[collection]
+            regx = re.compile(screen_name, re.IGNORECASE)
+            
+            for user in col.find({"screen_name": regx}):
+                return user
+
+        except Exception as e:
+            print "error al buscar usuario: ", screen_name, " en la collection: ", collection
+            print e
+
     def save_user(self, document):
             db = self.mongo_client[MONGO_DB_NAME]
             col = db[DB_COL_USERS]
@@ -77,6 +93,17 @@ class MongoDBUtils(object):
             col = db[DB_COL_USERS]
             col.update({'screen_name' : screen_name }, {'$set' : {'age' : age }})
 
+    def save_user_tweets(self, screen_name,tweets):
+            db = self.mongo_client[MONGO_DB_NAME]
+            col = db[DB_COL_USERS]
+            col.update({'screen_name' : screen_name }, {'$set' : {'tweets' : tweets }})
+            print "Updated tweets for user: ", screen_name
+  
+    def save_other_network(self, screen_name,network,value):
+            db = self.mongo_client[MONGO_DB_NAME]
+            col = db[DB_COL_USERS]
+            col.update({'screen_name' : screen_name }, {'$set' : {network : value }})
+
     def set_profilePic_age_gender_user(self, screen_name,age,gender):
             db = self.mongo_client[MONGO_DB_NAME]
             col = db[DB_COL_USERS]
@@ -92,7 +119,7 @@ class MongoDBUtils(object):
     def get_tweetsText(self):
 
         try:
-            df = DataFrame(columns=('screen_name', 'tweets', 'age','followers_count',  'tweets_count', 'linkedin', 'snapchat', 'instagram'))
+            df = DataFrame(columns=('screen_name', 'tweets', 'age','followers_count',  'tweets_count', 'linkedin', 'snapchat', 'instagram','facebook'))
             # Obtiene una referencia a la instancia de la DB
             db = self.mongo_client[MONGO_DB_NAME]
             # Obtiene el ObjectID Mongo del perfil del data source para el usuario
@@ -101,12 +128,46 @@ class MongoDBUtils(object):
             for user in col.find(): #para cada usuario
                 tweetText=""
                 for tweet in  user['tweets']:
-                    tweetText= tweetText +' '+ tweet['text']
+                    tweetText= tweetText +' '+ tweet['full_text']
                 #print user['screen_name']
                 #print user['age']
-                df.loc[count] = [user['screen_name'],tweetText,user['age'],user['followers_count'],len(user['tweets']),user['linkedin'],user['snapchat'],user['instagram'] ]
+                df.loc[count] = [user['screen_name'],tweetText,user['age'],user['followers_count'],user['statuses_count'],user['linkedin'],user['snapchat'],user['instagram'],user['facebook'] ]
                 count += 1
             return df
+
+        except ConnectionFailure as e:
+            self.logger.error('Mongo connection error', exc_info=True)
+        except PyMongoError as e:
+            self.logger.error('Error while trying to save user account', exc_info=True)
+
+    def populate_mentions_hashtags_urls(self):
+
+        try:
+            db = self.mongo_client[MONGO_DB_NAME]
+            # Obtiene el ObjectID Mongo del perfil del data source para el usuario
+            col = db[DB_COL_USERS]
+            for user in col.find(): #para cada usuario
+
+                try:
+                    user['qtyMentions']
+
+                except : 
+                    ##Si no se calcularon las cantidades aun, las calculo
+                    qtyMentions=0
+                    qtyHashtags=0
+                    qtyUrls=0
+
+                    for tweet in  user['tweets']:
+
+                        qtyMentions=qtyMentions+len(tweet['entities']['user_mentions'])
+                        qtyHashtags=qtyHashtags+len(tweet['entities']['hashtags'])
+                        qtyUrls=qtyUrls+len(tweet['entities']['urls'])
+
+                    qtyTweets = len(user['tweets'])
+
+                    col.update({'screen_name' : user['screen_name'] }, {'$set' : {'qtyMentions' : round(qtyMentions/qtyTweets,2) }})
+                    col.update({'screen_name' : user['screen_name'] }, {'$set' : {'qtyHashtags' : round(qtyHashtags/qtyTweets,2) }})
+                    col.update({'screen_name' : user['screen_name'] }, {'$set' : {'qtyUrls'     : round(qtyUrls/qtyTweets,2) }})
 
         except ConnectionFailure as e:
             self.logger.error('Mongo connection error', exc_info=True)
@@ -117,7 +178,7 @@ class MongoDBUtils(object):
     def get_tweetsTextForBigrams(self):
 
         try:
-            df = DataFrame(columns=('screen_name', 'tweets', 'age','followers_count',  'tweets_count', 'linkedin', 'snapchat', 'instagram'))
+            df = DataFrame(columns=('screen_name', 'tweets', 'age','followers_count',  'tweets_count', 'linkedin', 'snapchat', 'instagram','facebook'))
             # Obtiene una referencia a la instancia de la DB
             db = self.mongo_client[MONGO_DB_NAME]
             # Obtiene el ObjectID Mongo del perfil del data source para el usuario
@@ -126,10 +187,10 @@ class MongoDBUtils(object):
             for user in col.find(): #para cada usuario
                 tweetText=""
                 for tweet in  user['tweets']:
-                    tweetText= tweetText +'. '+ tweet['text']
+                    tweetText= tweetText +'. '+ tweet['full_text']
                 #print user['screen_name']
                 #print user['age']
-                df.loc[count] = [user['screen_name'],tweetText,user['age'],user['followers_count'],len(user['tweets']),user['linkedin'],user['snapchat'],user['instagram'] ]
+                df.loc[count] = [user['screen_name'],tweetText,user['age'],user['followers_count'],user['statuses_count'],user['linkedin'],user['snapchat'],user['instagram'],user['facebook'] ]
                 count += 1
             return df
 
@@ -171,7 +232,7 @@ class MongoDBUtils(object):
             tweetText=""
             for user in col.find({"age":ageRange}) :
                 for tweet in  user['tweets']:
-                    tweetText= tweetText +' '+ tweet['text']
+                    tweetText= tweetText +' '+ tweet['full_text']
             return tweetText        
         except ConnectionFailure as e:
             self.logger.error('Mongo connection error', exc_info=True)
@@ -220,7 +281,7 @@ class MongoDBUtils(object):
     def get_customFields(self):
 
         try:
-            df = DataFrame(columns=('screen_name', 'friends_count',  'tweets_count', 'linkedin', 'snapchat', 'instagram','followers_count','favourites_count', 'profile_pic_gender','age'))
+            df = DataFrame(columns=('screen_name', 'friends_count',  'tweets_count', 'linkedin', 'snapchat', 'instagram','facebook','followers_count','favourites_count', 'profile_pic_gender','age'))
             # Obtiene una referencia a la instancia de la DB
             db = self.mongo_client[MONGO_DB_NAME]
             # Obtiene el ObjectID Mongo del perfil del data source para el usuario
@@ -232,7 +293,7 @@ class MongoDBUtils(object):
                     gender=1
                 elif user['profile_pic_gender'] == 'female' :
                     gender=2
-                df.loc[count] = [user['screen_name'],user['friends_count'],len(user['tweets']),user['linkedin'],user['snapchat'],user['instagram'],user['followers_count'],user['favourites_count'], gender,user['age'] ]
+                df.loc[count] = [user['screen_name'],user['friends_count'],user['statuses_count'],user['linkedin'],user['snapchat'],user['instagram'],user['facebook'],user['followers_count'],user['favourites_count'], gender,user['age'] ]
                 count += 1
             return df
 
@@ -429,7 +490,7 @@ class MongoDBUtils(object):
 
             for tweet in  user['tweets']:
                 try:
-                    df.loc[count] = [user['screen_name'],tweet['text'],ageReal, user['age'],user['profile_pic_age'] ]
+                    df.loc[count] = [user['screen_name'],tweet['full_text'],ageReal, user['age'],user['profile_pic_age'] ]
                     #print user['screen_name'],",",tweet['text'],",",ageReal,",", user['age'],",",user['profile_pic_age']
                     count += 1
                 except Exception as a:

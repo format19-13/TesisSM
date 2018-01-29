@@ -63,11 +63,31 @@ class TwitterStreamer(Twython):
 
                     print "USUARIOS GUARDADOS EN BD:"
                     for user in output:
-                        try:
-                            userToSave = self.getUserTweetsAndInfo(user)
+                        print user['screen_name']   
+                        try:     
+                            try:
+                                userToSave = self.getUserTweets(user)
+                            except Exception as e:
+                                print "Usuario con perfil restringido"
+                                userToSave = user
+
+                            userToSave = self.populateOtherNetworks(userToSave)
+
                             userToSave["age"]=db_access.getEdad(userToSave['screen_name'],"unlabeled_users")
                             print userToSave['screen_name']
-                            self.save_user(user)
+                            
+                            try:
+                                self.save_user(userToSave)
+                            except pymongo.errors.DocumentTooLarge as e:
+                                while True:
+                                    print "********* Doc muy grande, eliminando 50 tweets..."
+                                    try: 
+                                        userToSave['tweets']= userToSave['tweets'][:len(userToSave['tweets'])-50]
+                                        self.save_user(userToSave)
+                                        break
+                                    except pymongo.errors.DocumentTooLarge as e:
+                                        pass
+
                         except Exception as e: 
                             print "Error al intentar guardar usuario: ", user["screen_name"]
                             print(e)
@@ -85,38 +105,117 @@ class TwitterStreamer(Twython):
             for user in output: 
                 print user['screen_name']   
                 try:     
-                    userToSave = self.getUserTweetsAndInfo(user)
+                    try:
+                        userToSave = self.getUserTweets(user)
+                    except Exception as e:
+                        print "Usuario con perfil restringido"
+                        userToSave = user
+
+                    userToSave = self.populateOtherNetworks(userToSave)
+
                     userToSave["age"]=db_access.getEdad(userToSave['screen_name'],"unlabeled_users")
                     print userToSave['screen_name']
-                    self.save_user(user)   
+                    userToSave['screen_name']= user['screen_name'].lower()
+                    
+                    try:
+                        self.save_user(userToSave)
+                    except pymongo.errors.DocumentTooLarge as e:
+                        while True:                                
+                            print "********* Doc muy grande, eliminando 50 tweets..."
+                            try: 
+                                userToSave['tweets']= userToSave['tweets'][:len(userToSave['tweets'])-50]
+                                self.save_user(userToSave)
+                                break
+                            except pymongo.errors.DocumentTooLarge as e:
+                                pass
+
                 except Exception as e: 
-                    print "Error al intentar guardar usuario: ", user["screen_name"]
-                    print(e)
-                    pass
+                            print "Error al intentar guardar usuario: ", user["screen_name"]
+                            print(e)
+                            pass
 
-    def getUserTweetsAndInfo(self,user):
-        tweets= self.get_user_timeline(screen_name=user['screen_name'], count=3000)
-        tweetsInSpanish=[]
+    def getUserTweets(self,user):
+        alltweets = []  
+        print user['screen_name']
+        #make initial request for most recent tweets (200 is the maximum allowed count)
+        new_tweets = self.get_user_timeline(screen_name = user['screen_name'],count=200, tweet_mode='extended')
 
-        for tweet in tweets:                            
-            if tweet["lang"]=="es":
-                tweetsInSpanish.append(tweet)
+        alltweets.extend(new_tweets)
+    
+        #save the id of the oldest tweet less one
+        oldest = alltweets[-1]['id'] - 1
+
+        #keep grabbing tweets until there are no tweets left to grab
+        while len(new_tweets) > 0:
+            #print "getting tweets before %s" % (oldest)
             
-        user['tweets']=tweetsInSpanish                    
-        user['screen_name']= user['screen_name'].lower()
+            #all subsiquent requests use the max_id param to prevent duplicates
+            try : 
+                new_tweets = self.get_user_timeline(screen_name = user['screen_name'],count=200, tweet_mode='extended',max_id=oldest)
+            
+            except Exception as e:
+                print e
+                print "esperando"
+                time.sleep(900) 
+                new_tweets = self.get_user_timeline(screen_name = user['screen_name'],count=200, tweet_mode='extended',max_id=oldest)
+            
+            #save most recent tweets
+            alltweets.extend(new_tweets)
+
+            #update the id of the oldest tweet less one
+            oldest = alltweets[-1]['id'] - 1
+
+            print "...%s tweets downloaded so far" % (len(alltweets))
+
+        tweetsSpanish=[]
+        for tweet in alltweets:
+            if tweet["lang"]=="es" and not (tweet['full_text'].startswith('RT ')):
+                tweetsSpanish.append(tweet)
+
+        print "from ", len(alltweets), ' tweets, ',len(tweetsSpanish), 'were in Spanish and not RT'
+        
+        user['tweets']=tweetsSpanish  
+        return user
+
+    def populateOtherNetworks(self,user):                  
         user["linkedin"] = False                                 
         user["instagram"] = False
         user["snapchat"] = False 
+        user["facebook"] = False
 
-        try:                    
+        try: 
+            #First try to get them from urls                   
             urls= user["entities"]["url"]["urls"]
             for url in urls:                                      
                 if "linkedin" in url["expanded_url"] : user["linkedin"] = True 
                 if "instagram" in url["expanded_url"]: user["instagram"] = True 
-                if "snapchat" in url["expanded_url"] : user["snapchat"] = True                              
+                if "snapchat" in url["expanded_url"] : user["snapchat"] = True     
+                if "facebook" in url["expanded_url"] : user["facebook"] = True                           
         except Exception as e: 
                 #"Usuario: ", user['screen_name'], "no tiene links asociados"
                 pass
+
+        #Next try to get them from the bio
+        bio = user['description']
+
+        if user['lang'] == 'es' and isinstance(bio, unicode):
+            bio = bio.lower()
+            screen_name = user["screen_name"]
+                
+            if (bio.find(u'instagram')!= -1 or bio.find(u'ig:')!= -1 or bio.find(u'insta')!= -1) and (not user["instagram"]) : 
+                user["instagram"] = True 
+            if (bio.find(u'snap')!= -1 or bio.find(u'snapchat:')!= -1) and (not user["snapchat"]): 
+                user["snapchat"] = True     
+            if bio.find(u'linkedin')!= -1 and (not user["linkedin"]): 
+                user["linkedin"] = True 
+            if (bio.find(u'facebook')!= -1 or bio.find(u'face:')!= -1 or bio.find(u'fbk')!= -1) and (not user["facebook"]) : 
+                user["facebook"] = True 
+
+        if user["facebook"]: print "Usuario: ", screen_name, " tiene facebook"
+        if user["instagram"]: print "Usuario: ", screen_name, " tiene instagram"
+        if user["snapchat"]: print "Usuario: ", screen_name, " tiene snapchat"
+        if user["linkedin"]: print "Usuario: ", screen_name, " tiene linkedin"
+        
         return user
 
     def getAgeFromFacebook(self,user):
@@ -145,7 +244,47 @@ class TwitterStreamer(Twython):
         except :
             return image  
 
+    def updateTweets(self):
+        db_access = MongoDBUtils()
+        cont=0
+        for user in db_access.get_users("users"):
+            cont = cont+1
+            if (len(user['tweets'])==0):
+                print cont
+                oldTweets= len(user['tweets'])
+                try:
+                    userToSave = self.getUserTweets(user)
+                except Exception as e:
+                    print "Usuario con perfil restringido"
+                    userToSave = user
+                #print "ANTES:",oldTweets , "- AHORA: ", len(userToSave['tweets'])
 
+                if oldTweets != len(userToSave['tweets']):
+                    try:
+                        db_access.save_user_tweets(user["screen_name"], userToSave['tweets'])
+                    except pymongo.errors.DocumentTooLarge as e:
+                        while True:
+                            print "********* Doc muy grande, eliminando 50 tweets..."
+                            try: 
+                                userToSave['tweets']= userToSave['tweets'][:len(userToSave['tweets'])-50]
+                                db_access.save_user_tweets(user["screen_name"], userToSave['tweets'])
+                                break
+                            except pymongo.errors.DocumentTooLarge as e:
+                                pass
+    def updateOtherNetworks(self):
+        db_access = MongoDBUtils()
+        cont=0
+        for user in db_access.get_users("users"):
+            cont = cont+1
+            if (cont>0):
+                print cont
+
+                try:
+                    userToSave = self.populateOtherNetworks(user)
+                    db_access.save_other_network(userToSave['screen_name'],'facebook',userToSave['facebook'])
+                except Exception as e:
+                    print "error"
+                   
 def main():
     print 'Process start...'
     processor = TwitterStreamer(source=SOURCE)

@@ -27,7 +27,7 @@ def etiquetarUsuarios():
 	print "Etiquetando usuarios con la edad en la bio......"
 	db_access.getBioWithAge("unlabeled_users")
 
-	print "Populando instagram, snapchat y linkedin a partir de la bio..."
+	print "Populando instagram, snapchat, facebook y linkedin a partir de la bio..."
 	db_access.getUrlsFromBio("users")
 
 

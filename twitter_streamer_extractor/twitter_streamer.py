@@ -36,8 +36,8 @@ def process_twitter_data(worker_id, queue, module_name, source):
         if 'text' in data:
             # Guarda el Tweet
             db_access.save_tweet(data, source)
-            print data
-
+            #print data
+            print "Tweet guardado..."
             logger.debug('TWEET | id: ' + str(data['id']) + ': ' + data['text'].encode('utf-8'))
         elif 'delete' in data:
             logger.debug('DELETION NOTICE | ' + str(data).encode('utf-8'))

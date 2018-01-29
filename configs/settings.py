@@ -20,10 +20,10 @@ LOGGING_ROOT_NAME = 'logfile'
 # STREAMER
 ############################
 TWITTER_ACCESS_KEYS = {
-    "app_key": "U20LyEZpsROJSo1hE3GdSigC6",
-    "app_secret": "u75pnyuv6nBvsdTpeC75j7OdXobgNqRoZekPyP8l8GlYYO6Rfm",
-    "app_access_token": "780859625448939521-XZ0Pz1XH4fXBQuTZwYjoL49fTLMQSbK",
-    "app_access_token_secret": "fiWErePI0a0KiKlwMvu9VRXXYN7ZdrAmFMiGhFouHsAWE",
+    "app_key": "OcIotSdlDvocxI4wHob90H1xB",
+    "app_secret": "8yHsxTSdcxvujXOrUZqWmkz6OTOVnp8NSr6cYjq5rgfSFt6Wzs",
+    "app_access_token": "780859625448939521-9oCRYyZ5B1UfFamNH8NMguFhhrZ97kx",
+    "app_access_token_secret": "nhVojK0LQCFM1S9Hepb6dUgOpb0IVC2ZZEOkSpAP8eLxK",
     "description": "Twitter access key"
 }
 

@@ -39,3 +39,12 @@ analyzeProfilePicture()
 print "Ejecutando extractListsSubscriptions.py"
 lists = TwitterStreamerSubscriptions(source=SOURCE)
 lists.run()
+
+##guardar datos sobre tweets de los user en collection "users"
+print "Ejecutando mongo_utils.populate_mentions_hashtags_urls"
+db_access = MongoDBUtils()
+db_access.populate_mentions_hashtags_urls()
+
+##Popular las flags de insta, linkedin y face en base a la bio
+db_access.getUrlsFromBio('users')
+
