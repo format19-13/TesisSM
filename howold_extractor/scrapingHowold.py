@@ -10,21 +10,20 @@ from twython import Twython
 
 def analyzeProfilePicture():
 	db_access = MongoDBUtils()
-	users = db_access.get_users('users')
+	users = db_access.get_usersWithNoProfilePicAge()
 	cont=0
 	for user in users : 
-		if not db_access.hasValidProfilePicAge(user['screen_name']):
-			cont = cont+1
-			print "-----------------------"
+		cont = cont+1
+		print "-----------------------"
 
-			profilePic=user["profile_image_url_https"].replace("normal", "400x400")
-			age= getAgeGenderFromProfilePicture(user['screen_name'],profilePic)
+		profilePic=user["profile_image_url_https"].replace("normal", "400x400")
+		age= getAgeGenderFromProfilePicture(user['screen_name'],profilePic)
 
-			print user['screen_name'], ' - ' , age 
+		print user['screen_name'], ' - ' , age 
 
-			if cont%18==0 :
-				print "Esperando..."
-				time.sleep(60) 
+		if cont%18==0 :
+			print "Esperando..."
+			time.sleep(60) 
 
 def getAgeGenderFromProfilePicture(screen_name,image):
 	db_access = MongoDBUtils()

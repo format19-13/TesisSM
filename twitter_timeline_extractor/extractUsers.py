@@ -17,12 +17,18 @@ import time
 import pymongo
 from pymongo import MongoClient
 import imp
+import emoji
+import re
 
 class TwitterStreamer(Twython):
 
     def save_user(self,data):
         db_access = MongoDBUtils()
         db_access.save_user(data)
+
+    def markUnlabeledAsLabeled(self,userUnlabeled):
+        db_access = MongoDBUtils()
+        db_access.markUnlabeledAsLabeled(userUnlabeled)
 
     def __init__(self, source):
 
@@ -41,14 +47,14 @@ class TwitterStreamer(Twython):
   
     def run(self):
         db_access = MongoDBUtils()
-        usersUnlabeled = db_access.get_users("unlabeled_users")
+        usersUnlabeled = db_access.get_unlabeled_users_with_age()
         cont=0
         screen_names = ''
 
         for user_unlab in usersUnlabeled:
-            age = db_access.getEdad(user_unlab['screen_name'],'unlabeled_users')
+            age = user_unlab['ageRange']
 
-            if age != -1 and not db_access.userExistsInDb(user_unlab['screen_name'].lower(),'users') :                     
+            if  not db_access.userExistsInDb(user_unlab['screen_name'].lower(),'users') :                     
                 cont = cont+1
                 print user_unlab['screen_name']
 
@@ -78,12 +84,14 @@ class TwitterStreamer(Twython):
                             
                             try:
                                 self.save_user(userToSave)
+                                self.markUnlabeledAsLabeled(user_unlab)
                             except pymongo.errors.DocumentTooLarge as e:
                                 while True:
                                     print "********* Doc muy grande, eliminando 50 tweets..."
                                     try: 
                                         userToSave['tweets']= userToSave['tweets'][:len(userToSave['tweets'])-50]
                                         self.save_user(userToSave)
+                                        self.markUnlabeledAsLabeled(user_unlab)
                                         break
                                     except pymongo.errors.DocumentTooLarge as e:
                                         pass
@@ -112,6 +120,7 @@ class TwitterStreamer(Twython):
                         userToSave = user
 
                     userToSave = self.populateOtherNetworks(userToSave)
+                    userToSave = self.populate_mentions_hashtags_urls(userToSave)
 
                     userToSave["age"]=db_access.getEdad(userToSave['screen_name'],"unlabeled_users")
                     print userToSave['screen_name']
@@ -119,12 +128,14 @@ class TwitterStreamer(Twython):
                     
                     try:
                         self.save_user(userToSave)
+                        self.markUnlabeledAsLabeled(user_unlab)
                     except pymongo.errors.DocumentTooLarge as e:
                         while True:                                
                             print "********* Doc muy grande, eliminando 50 tweets..."
                             try: 
                                 userToSave['tweets']= userToSave['tweets'][:len(userToSave['tweets'])-50]
                                 self.save_user(userToSave)
+                                self.markUnlabeledAsLabeled(user_unlab)
                                 break
                             except pymongo.errors.DocumentTooLarge as e:
                                 pass
@@ -284,6 +295,31 @@ class TwitterStreamer(Twython):
                     db_access.save_other_network(userToSave['screen_name'],'facebook',userToSave['facebook'])
                 except Exception as e:
                     print "error"
+
+    def populate_mentions_hashtags_urls(self,user):
+        qtyMentions=0
+        qtyHashtags=0
+        qtyUrls=0
+        qtyEmojis=0
+
+        emojis_list = map(lambda x: ''.join(x.split()), emoji.UNICODE_EMOJI.keys())
+        r = re.compile('|'.join(re.escape(p) for p in emojis_list)) #emojis
+        re2="[>]?[:;Xx][']?[-=]?[)(PpDdOo$]|<3" #emoticons
+
+        for tweet in  user['tweets']:
+            txt=tweet['full_text']
+            qtyMentions=qtyMentions+len(tweet['entities']['user_mentions'])
+            qtyHashtags=qtyHashtags+len(tweet['entities']['hashtags'])
+            qtyUrls=qtyUrls+len(tweet['entities']['urls'])
+            qtyEmojis= qtyEmojis + len(r.findall(txt))+len(re.findall(re2,txt))
+
+            qtyTweets = len(user['tweets'])
+
+            user["qtyMentions"]=round(qtyMentions/qtyTweets,2)
+            user["qtyHashtags"]=round(qtyHashtags/qtyTweets,2)
+            user["qtyUrls"]=round(qtyUrls/qtyTweets,2)
+            user["qtyEmojis"]=round(qtyEmojis/qtyTweets,2)
+        return user
                    
 def main():
     print 'Process start...'

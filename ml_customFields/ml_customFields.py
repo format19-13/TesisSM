@@ -10,7 +10,6 @@ from data_access.mongo_utils import MongoDBUtils
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import confusion_matrix
 from sklearn.metrics import accuracy_score
-from sklearn.neural_network import MLPClassifier
 from sklearn.naive_bayes import MultinomialNB
 import itertools
 import time
@@ -56,17 +55,6 @@ def main_customFields():
 	
 	# View the predicted probabilities of the first 10 observations
 	rforest.predict_proba(test_data[features])[0:10]
-
-	# View the ACTUAL age for the first five observations
-	#print test_data['age'].head()
-
-	clfMLP = MLPClassifier(hidden_layer_sizes=(100,100,100), max_iter=500, alpha=0.0001,
-                     solver='sgd', verbose=10,  random_state=21,tol=0.000000001)
-
-	clfMLP.fit(train_data[features], y)
-	predsMLP = clfMLP.predict(test_data[features])
-
-	print "accuracy mlp - " , accuracy_score(test_data['age'].tolist(), predsMLP)
 
 	#############################################
 	# EVALUATE THE MODEL
@@ -140,10 +128,9 @@ def main_customFields():
 
 	accuracyRF = accuracy_score(test_data['age'].tolist(), resultForest)
 	accuracyNB = accuracy_score(test_data['age'].tolist(), resultBayes)
-	accuracyMLP = accuracy_score(test_data['age'].tolist(), predsMLP)
 
-	print "Bayes:",accuracyNB,"|RForest:", accuracyRF,"|NeuralN:", accuracyMLP
-	return "Bayes:",accuracyNB,"|RForest:", accuracyRF,"|NeuralN:", accuracyMLP
+	print "Bayes:",accuracyNB,"|RForest:", accuracyRF
+	return "Bayes:",accuracyNB,"|RForest:", accuracyRF
 
 if __name__ == '__main__':
     main_customFields()

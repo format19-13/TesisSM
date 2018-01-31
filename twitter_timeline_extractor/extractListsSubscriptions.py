@@ -36,37 +36,27 @@ class TwitterStreamerSubscriptions(Twython):
 
     def run(self):
         db_access = MongoDBUtils()
-        users = db_access.get_users("users");
+        users = db_access.get_usersWithNoSubscriptionLists();
         contador=1
         for user in users:
             try:
-                if not self.hasSubscriptionLists(user):
-
-                    if contador < 15:
-                        contador = contador + 1
-                        print '----------------------------'
-                        print user["screen_name"]
-                        lists=self.get_list_subscriptions(screen_name=user['screen_name'],count=1000)                
-                        print len(lists["lists"])
-                        save_listSubscriptions(user["screen_name"], lists["lists"])
-                        contador=contador+1
-                    else:
-                        print "esperando"
-                        time.sleep(900)
-                        contador=0
+                if contador < 15:
+                    contador = contador + 1
+                    print '----------------------------'
+                    print user["screen_name"]
+                    lists=self.get_list_subscriptions(screen_name=user['screen_name'],count=1000)                                        
+                    print len(lists["lists"])
+                    save_listSubscriptions(user["screen_name"], lists["lists"])
+                    contador=contador+1
+                else:
+                    print "esperando"
+                    time.sleep(900)
+                    contador=0
 
             except Exception as e : 
                 print 'Error subscription lists user: ',user["screen_name"]
                 print e
                 save_listSubscriptions(user["screen_name"], -1)
-
-
-    def hasSubscriptionLists(self,user):
-        try:
-            user['listsSubscriptions']
-            return True
-        except:
-            return False
             
 def main():
     print 'Process start...'

@@ -224,6 +224,7 @@ def main_featBOW():
 	accuracyNB = accuracy_score(test_data['age'].tolist(), resultBayes)
 	accuracyMLP = accuracy_score(test_data['age'].tolist(), predsMLP)
 
+	print  "Bayes:",accuracyNB,"|RForest:", accuracyRF,"|NeuralN:", accuracyMLP
 	return "Bayes:",accuracyNB,"|RForest:", accuracyRF,"|NeuralN:", accuracyMLP
 
 if __name__ == '__main__':
