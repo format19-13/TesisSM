@@ -44,7 +44,7 @@ def main_featBigram():
 	train_data=users_df.sample(frac=0.8,random_state=200) 
 	test_data=users_df.drop(train_data.index)
 
-	bigram_vectorizer = CountVectorizer(ngram_range=(2,3), token_pattern=r'\b\w+\b', min_df=1,strip_accents='unicode',max_features=500) 
+	bigram_vectorizer = CountVectorizer(ngram_range=(1,3), token_pattern=r'\b\w+\b', min_df=1,strip_accents='unicode',max_features=5000) 
 
 	X_train_counts = bigram_vectorizer.fit_transform(train_data.tweets)
 	# fit_transform() fits the model and learns the vocabulary; second, it transforms our training data

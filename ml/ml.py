@@ -44,11 +44,11 @@ print "Subscription List BOW: ",  accSubs
 print "Tweets BOW: ",  accFeatBOW
 print "Tweets Bigram: ",  accFeatBigram
 
-#df = pd.DataFrame([["Custom Fields", accCustomFields], ["Subscription List BOW", accSubs],["Tweets BOW", accFeatBOW], ["Tweets Bigram", accFeatBigram]], columns=['Method','Accuracy'])
+df = pd.DataFrame([["Custom Fields", accCustomFields], ["Subscription List BOW", accSubs],["Tweets BOW", accFeatBOW], ["Tweets Bigram", accFeatBigram]], columns=['Method','Accuracy'])
 
 outdir =time.strftime("%d-%m-%Y")
 outname = 'accuracy.csv'
 fullname = os.path.join(outdir, outname)    
 
 import csv
-#df.to_csv(fullname,index=False)
+df.to_csv(fullname,index=False)

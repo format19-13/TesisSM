@@ -28,7 +28,7 @@ class TwitterStreamer(Twython):
 
     def markUnlabeledAsLabeled(self,userUnlabeled):
         db_access = MongoDBUtils()
-        db_access.markUnlabeledAsLabeled(userUnlabeled)
+        db_access.markUnlabeledAsLabeled(userUnlabeled['screen_name'])
 
     def __init__(self, source):
 
@@ -78,20 +78,23 @@ class TwitterStreamer(Twython):
                                 userToSave = user
 
                             userToSave = self.populateOtherNetworks(userToSave)
+                            userToSave = self.populate_mentions_hashtags_urls(userToSave)
 
                             userToSave["age"]=db_access.getEdad(userToSave['screen_name'],"unlabeled_users")
+                            userToSave["exactAge"]=db_access.getExactAge(userToSave['screen_name'])
+                    
                             print userToSave['screen_name']
                             
                             try:
                                 self.save_user(userToSave)
-                                self.markUnlabeledAsLabeled(user_unlab)
+                                self.markUnlabeledAsLabeled(userToSave)
                             except pymongo.errors.DocumentTooLarge as e:
                                 while True:
                                     print "********* Doc muy grande, eliminando 50 tweets..."
                                     try: 
                                         userToSave['tweets']= userToSave['tweets'][:len(userToSave['tweets'])-50]
                                         self.save_user(userToSave)
-                                        self.markUnlabeledAsLabeled(user_unlab)
+                                        self.markUnlabeledAsLabeled(userToSave)
                                         break
                                     except pymongo.errors.DocumentTooLarge as e:
                                         pass
@@ -121,21 +124,23 @@ class TwitterStreamer(Twython):
 
                     userToSave = self.populateOtherNetworks(userToSave)
                     userToSave = self.populate_mentions_hashtags_urls(userToSave)
-
                     userToSave["age"]=db_access.getEdad(userToSave['screen_name'],"unlabeled_users")
+                    userToSave["exactAge"]=db_access.getExactAge(userToSave['screen_name'],"unlabeled_users")
+                    
                     print userToSave['screen_name']
                     userToSave['screen_name']= user['screen_name'].lower()
                     
                     try:
                         self.save_user(userToSave)
-                        self.markUnlabeledAsLabeled(user_unlab)
+                        self.markUnlabeledAsLabeled(userToSave)
                     except pymongo.errors.DocumentTooLarge as e:
                         while True:                                
                             print "********* Doc muy grande, eliminando 50 tweets..."
                             try: 
                                 userToSave['tweets']= userToSave['tweets'][:len(userToSave['tweets'])-50]
+                                userToSave = self.populate_mentions_hashtags_urls(userToSave)
                                 self.save_user(userToSave)
-                                self.markUnlabeledAsLabeled(user_unlab)
+                                self.markUnlabeledAsLabeled(userToSave)
                                 break
                             except pymongo.errors.DocumentTooLarge as e:
                                 pass
@@ -146,49 +151,56 @@ class TwitterStreamer(Twython):
                             pass
 
     def getUserTweets(self,user):
-        alltweets = []  
-        print user['screen_name']
-        #make initial request for most recent tweets (200 is the maximum allowed count)
-        new_tweets = self.get_user_timeline(screen_name = user['screen_name'],count=200, tweet_mode='extended')
+        try:
+            alltweets = []  
+            print user['screen_name'], "-Getting tweets"
+            #make initial request for most recent tweets (200 is the maximum allowed count)
+            new_tweets = self.get_user_timeline(screen_name = user['screen_name'],count=200, tweet_mode='extended')
 
-        alltweets.extend(new_tweets)
-    
-        #save the id of the oldest tweet less one
-        oldest = alltweets[-1]['id'] - 1
-
-        #keep grabbing tweets until there are no tweets left to grab
-        while len(new_tweets) > 0:
-            #print "getting tweets before %s" % (oldest)
-            
-            #all subsiquent requests use the max_id param to prevent duplicates
-            try : 
-                new_tweets = self.get_user_timeline(screen_name = user['screen_name'],count=200, tweet_mode='extended',max_id=oldest)
-            
-            except Exception as e:
-                print e
-                print "esperando"
-                time.sleep(900) 
-                new_tweets = self.get_user_timeline(screen_name = user['screen_name'],count=200, tweet_mode='extended',max_id=oldest)
-            
-            #save most recent tweets
             alltweets.extend(new_tweets)
-
-            #update the id of the oldest tweet less one
+        
+            #save the id of the oldest tweet less one
             oldest = alltweets[-1]['id'] - 1
 
-            print "...%s tweets downloaded so far" % (len(alltweets))
+            #keep grabbing tweets until there are no tweets left to grab
+            while len(new_tweets) > 0:
+                #print "getting tweets before %s" % (oldest)
+                
+                #all subsiquent requests use the max_id param to prevent duplicates
+                try : 
+                    new_tweets = self.get_user_timeline(screen_name = user['screen_name'],count=200, tweet_mode='extended',max_id=oldest)
+                
+                except Exception as e:
+                    print e
+                    print "esperando"
+                    time.sleep(900) 
+                    new_tweets = self.get_user_timeline(screen_name = user['screen_name'],count=200, tweet_mode='extended',max_id=oldest)
+                
+                #save most recent tweets
+                alltweets.extend(new_tweets)
 
-        tweetsSpanish=[]
-        for tweet in alltweets:
-            if tweet["lang"]=="es" and not (tweet['full_text'].startswith('RT ')):
-                tweetsSpanish.append(tweet)
+                #update the id of the oldest tweet less one
+                oldest = alltweets[-1]['id'] - 1
 
-        print "from ", len(alltweets), ' tweets, ',len(tweetsSpanish), 'were in Spanish and not RT'
-        
-        user['tweets']=tweetsSpanish  
+                print "...%s tweets downloaded so far" % (len(alltweets))
+
+            tweetsSpanish=[]
+            for tweet in alltweets:
+                if tweet["lang"]=="es" and not (tweet['full_text'].startswith('RT ')):
+                    tweetsSpanish.append(tweet)
+
+            print "from ", len(alltweets), ' tweets, ',len(tweetsSpanish), 'were in Spanish and not RT'
+            
+            user['tweets']=tweetsSpanish  
+
+        except Exception as e:
+            print e
+
         return user
 
-    def populateOtherNetworks(self,user):                  
+    def populateOtherNetworks(self,user):    
+        print user['screen_name'], "- populating other networks"       
+
         user["linkedin"] = False                                 
         user["instagram"] = False
         user["snapchat"] = False 
@@ -230,6 +242,7 @@ class TwitterStreamer(Twython):
         return user
 
     def getAgeFromFacebook(self,user):
+        print user['screen_name'], "- getting age from facebook"     
         ageRange=""
         try:
             urls= user["entities"]["url"]["urls"]
@@ -246,6 +259,7 @@ class TwitterStreamer(Twython):
         return ageRange
 
     def getLatestProfilePic(self,screen_name,image):
+        print screen_name, "- getting latest profile pic"     
         try : 
             user=self.lookup_user(screen_name=screen_name)
             profilePic=user[0]["profile_image_url_https"]
@@ -267,7 +281,7 @@ class TwitterStreamer(Twython):
                     userToSave = self.getUserTweets(user)
                 except Exception as e:
                     print "Usuario con perfil restringido"
-                    userToSave = user
+                    userToSave= populate_mentions_hashtags_urls(user)
                 #print "ANTES:",oldTweets , "- AHORA: ", len(userToSave['tweets'])
 
                 if oldTweets != len(userToSave['tweets']):
@@ -297,6 +311,7 @@ class TwitterStreamer(Twython):
                     print "error"
 
     def populate_mentions_hashtags_urls(self,user):
+        print user['screen_name'], "- populate_mentions_hashtags_urls"     
         qtyMentions=0
         qtyHashtags=0
         qtyUrls=0
@@ -308,6 +323,7 @@ class TwitterStreamer(Twython):
 
         for tweet in  user['tweets']:
             txt=tweet['full_text']
+
             qtyMentions=qtyMentions+len(tweet['entities']['user_mentions'])
             qtyHashtags=qtyHashtags+len(tweet['entities']['hashtags'])
             qtyUrls=qtyUrls+len(tweet['entities']['urls'])

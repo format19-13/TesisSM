@@ -40,3 +40,6 @@ print "Ejecutando extractListsSubscriptions.py"
 lists = TwitterStreamerSubscriptions(source=SOURCE)
 lists.run()
 
+print "Ejecutando populate_mentions_hashtags_urls..."
+db_access = MongoDBUtils()
+db_access.populate_mentions_hashtags_urls()

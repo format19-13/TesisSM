@@ -165,17 +165,20 @@ class MongoDBUtils(object):
                         qtyHashtags=0
                         qtyUrls=0
                         qtyEmojis=0
-                        print cont ,'-',user['screen_name']
+
+                        print user['screen_name']
 
                         for tweet in  user['tweets']:
-                                
+                            
                             qtyMentions=qtyMentions+len(tweet['entities']['user_mentions'])
                             qtyHashtags=qtyHashtags+len(tweet['entities']['hashtags'])
                             qtyUrls=qtyUrls+len(tweet['entities']['urls'])
-                            qtyMentions=0
+
                             txt=tweet['full_text']
+                           # print tweet['full_text'] ,"-", len(tweet['entities']['user_mentions'])
                                 
                             qtyEmojis= qtyEmojis + len(r.findall(txt))+len(re.findall(re2,txt))
+                            
                             qtyTweets = len(user['tweets'])
 
                         col.update({'screen_name' : user['screen_name'] }, {'$set' : {'qtyMentions' : round(qtyMentions/qtyTweets,2) }})
@@ -452,6 +455,23 @@ class MongoDBUtils(object):
 
         return age
 
+    def getExactAge(self,screen_name):
+        db = self.mongo_client[MONGO_DB_NAME]
+        col = db["unlabeled_users"]
+        age = -1
+
+        regx = re.compile(screen_name, re.IGNORECASE)
+
+        for user in col.find({"screen_name": regx}):
+            try:
+                age=user['age']
+            except:
+                pass
+        #if age == -1 : 
+            #print "Usuario: ", screen_name, ", edad: La edad no pudo ser obtenida de unlabeled_users"
+
+        return age
+
     def populateInvalidUserAges(self):
         db = self.mongo_client[MONGO_DB_NAME]
         col = db["users"]
@@ -543,30 +563,14 @@ class MongoDBUtils(object):
         col = db["unlabeled_users"]
         return col.find({'age':{'$exists': True},'exported':False}, no_cursor_timeout=True)
 
-    def markUnlabeledAsLabeled(self,userUnlabeled):
-        print "Marco como labeled: ",userUnlabeled["screen_name"]
-        print "ANTES: ", userUnlabeled["exported"]
-         # Obtiene una referencia a la instancia de la DB
+    def markUnlabeledAsLabeled(self,screen_name):
+        # Obtiene una referencia a la instancia de la DB
         db = self.mongo_client[MONGO_DB_NAME]
         # Obtiene el ObjectID Mongo del perfil del data source para el usuario
         col = db["unlabeled_users"]
-        col.update({'screen_name' : userUnlabeled["screen_name"] }, {'$set' : {'exported' : True }})
-        print "AHORA: ",userUnlabeled["exported"]
-
-
-    def aux(self):
-        db = self.mongo_client[MONGO_DB_NAME]
-        col = db["unlabeled_users"]
-        i=0
-        for user in self.get_unlabeled_users_with_age():
-            i=i+1
-            print i
-            if self.userExistsInDb(user['screen_name'], "users") :
-                print user['screen_name'], "EXISTE!!!"
-                col.update({'screen_name' : user["screen_name"] }, {'$set' : {'exported' : True }})
-            else:
-                col.update({'screen_name' : user["screen_name"] }, {'$set' : {'exported' : False }})
-                print user['screen_name'], "NO EXISTE"
+        regx = re.compile(screen_name, re.IGNORECASE)
+        col.update({'screen_name' : regx }, {'$set' : {'exported' : True }})
+        print "usuario: ", screen_name , " marcado como exported"
 
     def get_usersWithNoProfilePicAge(self):
         # Obtiene una referencia a la instancia de la DB

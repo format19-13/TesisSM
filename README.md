@@ -13,4 +13,3 @@ PASOS:
 
 BACKUP DB: mongodump --collection users --db tesisdb
 RESTORE DB: mongorestore dump-2013-10-25/
---236?

@@ -24,6 +24,8 @@ import time
 from nltk.corpus import stopwords
 from tabulate import tabulate
 import matplotlib.pyplot as plt
+from sklearn.svm import LinearSVC
+from sklearn.linear_model import SGDClassifier
 
 def main_featBOW():
 
@@ -53,7 +55,7 @@ def main_featBOW():
 	foo = imp.load_source('stopwords', DIR_PREFIX+'/proyectos/TesisVT/nlp_features/nlp_utils.py')
 	stopwords = foo.generateCustomStopwords()  
 
-	count_vect = CountVectorizer(stop_words=stopwords, max_features=500 ) #Para hacer bag of words
+	count_vect = CountVectorizer(stop_words=stopwords, max_features=5000 ) #Para hacer bag of words
 	X_train_counts = count_vect.fit_transform(train_data.tweets)
 	# fit_transform() fits the model and learns the vocabulary; second, it transforms our training data
 	# into feature vectors. 
@@ -91,6 +93,10 @@ def main_featBOW():
 	forest = RandomForestClassifier(n_estimators = 100) 
 	# Fit the forest to the training set, using the bag of)
 
+	svm = LinearSVC(loss='hinge', penalty='l2', random_state=42)
+	
+	sgd = SGDClassifier(loss='hinge', penalty='l2', random_state=42, alpha=0.001)
+
 	# Fit the forest to the training set, using the bag of words as 
 	# features and the age range as the response variable
 
@@ -98,6 +104,10 @@ def main_featBOW():
 
 	bayes = bayes.fit( train_data_features, train_data["age"] ) 
 
+	svm = svm.fit(train_data_features, train_data["age"] ) 
+
+	sgd= sgd.fit(train_data_features, train_data["age"] ) 
+	
 	# Read the test data
 
 	# Get a bag of words for the test set, and convert to a numpy array
@@ -109,6 +119,9 @@ def main_featBOW():
 
 	resultBayes = bayes.predict(test_data_features)
 
+	resultSVM= svm.predict(test_data_features)
+
+	resultSGD= sgd.predict(test_data_features)
 
 	clfMLP = MLPClassifier(hidden_layer_sizes=(100,100,100), max_iter=10000, alpha=0.0001,
                      solver='sgd', verbose=10,  random_state=21,tol=0.000000001)
@@ -223,10 +236,13 @@ def main_featBOW():
 	accuracyRF = accuracy_score(test_data['age'].tolist(), resultForest)
 	accuracyNB = accuracy_score(test_data['age'].tolist(), resultBayes)
 	accuracyMLP = accuracy_score(test_data['age'].tolist(), predsMLP)
+	accuracySVM = accuracy_score(test_data['age'].tolist(), resultSVM)
+	accuracySGD = accuracy_score(test_data['age'].tolist(), resultSGD)
 
-	print  "Bayes:",accuracyNB,"|RForest:", accuracyRF,"|NeuralN:", accuracyMLP
-	return "Bayes:",accuracyNB,"|RForest:", accuracyRF,"|NeuralN:", accuracyMLP
+	print  "Bayes:",accuracyNB,"|RForest:", accuracyRF,"|NeuralN:", accuracyMLP,"|SVM:", accuracySVM,"|SGD:", accuracySGD
+	return "Bayes:",accuracyNB,"|RForest:", accuracyRF,"|NeuralN:", accuracyMLP,"|SVM:", accuracySVM,"|SGD:", accuracySGD
 
 if __name__ == '__main__':
     main_featBOW()
+
 
