@@ -25,11 +25,14 @@ import time
 from nltk.corpus import stopwords
 from tabulate import tabulate
 from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.svm import LinearSVC
+from sklearn.linear_model import SGDClassifier
+from sklearn.metrics import f1_score
 
-def main_featBigram():
+def main_featBigram(typeOp):
 	## *********ARMO EL DATASET DE TRAIN Y EL DE TEST *********
 	db_access = MongoDBUtils()
-	users_df = db_access.get_tweetsTextForBigrams()
+	users_df = db_access.get_tweetsText(typeOp)
 
 	for (i,row) in users_df["tweets"].iteritems():
 		result=''
@@ -83,12 +86,20 @@ def main_featBigram():
 	forest = RandomForestClassifier(n_estimators = 100) 
 	# Fit the forest to the training set, using the bag of)
 
+	svm = LinearSVC(loss='hinge', penalty='l2', random_state=42)
+	
+	sgd = SGDClassifier(loss='hinge', penalty='l2', random_state=42, alpha=0.001)
+
 	# Fit the forest to the training set, using the bag of words as 
 	# features and the age range as the response variable
 
 	forest = forest.fit( train_data_features, train_data["age"] ) 
 
 	bayes = bayes.fit( train_data_features, train_data["age"] ) 
+
+	svm = svm.fit(train_data_features, train_data["age"] ) 
+
+	sgd= sgd.fit(train_data_features, train_data["age"] ) 
 
 	# Read the test data
 
@@ -101,16 +112,25 @@ def main_featBigram():
 
 	resultBayes = bayes.predict(test_data_features)
 
+	resultSVM= svm.predict(test_data_features)
+
+	resultSGD= sgd.predict(test_data_features)
+
 	clfMLP = MLPClassifier(hidden_layer_sizes=(100,100,100), max_iter=10000, alpha=0.0001,
                      solver='sgd', verbose=10,  random_state=21,tol=0.000000001)
 
-	clfMLP.fit(train_data_features, train_data["age"])
-	predsMLP = clfMLP.predict(test_data_features)
+	#clfMLP.fit(train_data_features, train_data["age"])
+	#predsMLP = clfMLP.predict(test_data_features)
 
 	outdir =time.strftime("%d-%m-%Y")
-		
+	
 	if not os.path.exists(outdir):
-		os.mkdir(outdir)
+   		os.mkdir(outdir)
+
+   	if not os.path.exists(outdir +"/"+typeOp):
+   		os.mkdir(outdir +"/"+typeOp)
+
+   	outdir=outdir +"/"+typeOp
 
 	# Copy the results to a pandas dataframe with an "id" column and
 	# a "age" column
@@ -136,87 +156,43 @@ def main_featBigram():
 	
 	import ml_utils as ml_utils
 
-	##FOREST
-	########
+	ageRanges=[]
+	if typeOp=='normal':
+   		ageRanges=db_access.getAgeRanges()
+   	else:
+		ageRanges=db_access.get3AgeRanges()
 
-	#create confusion matrix: anything on the diagonal was classified correctly and the rest incorrectly.
-	cnf_matrix =confusion_matrix(test_data['age'].tolist(), resultForest)
-	#print "Confusion Matrix for Random Forest: "
-	#print cnf_matrix
-
-	# Plot non-normalized confusion matrix
-	fig2 = plt.figure()
-	ml_utils.plot_confusion_matrix(cnf_matrix, classes=db_access.getAgeRanges(),
-	                    title='Confusion matrix, without normalization for Feat Bigram - Random Forest')
+	##RANDOM FOREST
+	ml_utils.createConfusionMatrix(test_data['age'].tolist(),resultForest,ageRanges,'featBigram','RandomForest',outdir)
 	
-	outname = 'ml_featBigram_randomForest_confusionMatrixNotNormalized.png'
-	fullname = os.path.join(outdir, outname)    
-	fig2.savefig(fullname)
-
-	# Plot normalized confusion matrix
-	fig3 = plt.figure()
-	ml_utils.plot_confusion_matrix(cnf_matrix, classes=db_access.getAgeRanges(), normalize=True,
-                    title='Normalized confusion matrix for Feat Bigram - Random Forest')
-	
-	outname = 'ml_featBigram_randomForest_confusionMatrixNormalized.png'
-	fullname = os.path.join(outdir, outname)
-	fig3.savefig(fullname)
-
 	##BAYES
-	#########
-
-	cnf_matrix2 =confusion_matrix(test_data['age'].tolist(), resultBayes)
-	#print "Confusion Matrix for Naive Bayes: "
-	#print cnf_matrix2
-
-	# Plot non-normalized confusion matrix
-	fig2 = plt.figure()
-	ml_utils.plot_confusion_matrix(cnf_matrix2, classes=db_access.getAgeRanges(),
-	                    title='Confusion matrix, without normalization for Feat Bigram - Bayes')
+	ml_utils.createConfusionMatrix(test_data['age'].tolist(),resultBayes,ageRanges,'featBigram','NaiveBayes',outdir)
 	
-	outname = 'ml_featBigram_Bayes_confusionMatrixNotNormalized.png'
-	fullname = os.path.join(outdir, outname)    
-	fig2.savefig(fullname)
-
-	# Plot normalized confusion matrix
-	fig3 = plt.figure()
-	ml_utils.plot_confusion_matrix(cnf_matrix2, classes=db_access.getAgeRanges(), normalize=True,
-                    title='Normalized confusion matrix for Feat Bigram - Bayes')
+	##SVM
+	ml_utils.createConfusionMatrix(test_data['age'].tolist(),resultSVM,ageRanges,'featBigram','SVM',outdir)
 	
-	outname = 'ml_featBigram_Bayes_confusionMatrixNormalized.png'
-	fullname = os.path.join(outdir, outname)
-	fig3.savefig(fullname)
-
+	##SGD
+	ml_utils.createConfusionMatrix(test_data['age'].tolist(),resultSGD,ageRanges,'featBigram','SGD',outdir)
+	
 	##NEURAL NETWORK
-	###############
-	cnf_matrix3 =confusion_matrix(test_data['age'].tolist(), predsMLP)
-	#print "Confusion Matrix for Neural Network: "
-	#print cnf_matrix3
-
-	# Plot non-normalized confusion matrix
-	fig4 = plt.figure()
-	ml_utils.plot_confusion_matrix(cnf_matrix3, classes=db_access.getAgeRanges(),
-	                    title='Confusion matrix, without normalization for Feat BOW - NeuralNetwork')
+	#ml_utils.createConfusionMatrix(test_data['age'].tolist(),resultMLP,ageRanges,'featBOW','NeuralNetwork')
 	
-	outname = 'ml_featBOW_NeuralN_confusionMatrixNotNormalized.png'
-	fullname = os.path.join(outdir, outname)    
-	fig4.savefig(fullname)
-
-	# Plot normalized confusion matrix
-	fig5 = plt.figure()
-	ml_utils.plot_confusion_matrix(cnf_matrix3, classes=db_access.getAgeRanges(), normalize=True,
-                    title='Normalized confusion matrix for Feat BOW - NeuralNetwork')
-	
-	outname = 'ml_featBOW_NeuralN_confusionMatrixNormalized.png'
-	fullname = os.path.join(outdir, outname)
-	fig5.savefig(fullname)
-
 	accuracyRF = accuracy_score(test_data['age'].tolist(), resultForest)
 	accuracyNB = accuracy_score(test_data['age'].tolist(), resultBayes)
-	accuracyMLP = accuracy_score(test_data['age'].tolist(), predsMLP)
+	#accuracyMLP = accuracy_score(test_data['age'].tolist(), predsMLP)
+	accuracySVM = accuracy_score(test_data['age'].tolist(), resultSVM)
+	accuracySGD = accuracy_score(test_data['age'].tolist(), resultSGD)
 
-	print "Bayes:",accuracyNB,"|RForest:", accuracyRF,"|NeuralN:", accuracyMLP
-	return "Bayes:",accuracyNB,"|RForest:", accuracyRF,"|NeuralN:", accuracyMLP
+	fscoreRF = f1_score(test_data['age'].tolist(), resultForest, average=None, labels=ageRanges)
+	fscoreNB = f1_score(test_data['age'].tolist(), resultBayes, average=None, labels=ageRanges)
+	#fscoreMLP = f1_score(test_data['age'].tolist(), predsMLP, average=None, labels=ageRanges)
+	fscoreSVM = f1_score(test_data['age'].tolist(), resultSVM, average=None, labels=ageRanges)
+	fscoreSGD = f1_score(test_data['age'].tolist(), resultSGD, average=None, labels=ageRanges)
+
+	print "ACCURACY--> Bayes:",accuracyNB,"|RForest:", accuracyRF,"|SVM:", accuracySVM,"|SGD:", accuracySGD#,"|NeuralN:", accuracyMLP
+	print "F-SCORE--> Bayes:",fscoreNB,"|RForest:", fscoreRF,"|SVM:", fscoreSVM,"|SGD:", fscoreSGD#,"|NeuralN:", fscoreMLP
+	
+	return "ACCURACY--> Bayes:",accuracyNB,"|RForest:", accuracyRF,"|SVM:", accuracySVM,"|SGD:", accuracySGD,"F-SCORE--> Bayes:",fscoreNB,"|RForest:", fscoreRF,"|SVM:", fscoreSVM,"|SGD:", fscoreSGD#,"|NeuralN:", fscoreMLP#,"|NeuralN:", accuracyMLP
 
 if __name__ == '__main__':
     main_featBigram()

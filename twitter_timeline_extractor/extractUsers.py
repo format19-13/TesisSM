@@ -125,7 +125,7 @@ class TwitterStreamer(Twython):
                     userToSave = self.populateOtherNetworks(userToSave)
                     userToSave = self.populate_mentions_hashtags_urls(userToSave)
                     userToSave["age"]=db_access.getEdad(userToSave['screen_name'],"unlabeled_users")
-                    userToSave["exactAge"]=db_access.getExactAge(userToSave['screen_name'],"unlabeled_users")
+                    userToSave["exactAge"]=db_access.getExactAge(userToSave['screen_name'])
                     
                     print userToSave['screen_name']
                     userToSave['screen_name']= user['screen_name'].lower()

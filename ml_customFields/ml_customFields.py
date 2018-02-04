@@ -14,11 +14,15 @@ from sklearn.naive_bayes import MultinomialNB
 import itertools
 import time
 import matplotlib.pyplot as plt
+from sklearn.svm import LinearSVC
+from sklearn.linear_model import SGDClassifier
+from sklearn.metrics import f1_score
 
-def main_customFields():
+def main_customFields(typeOp):
+
 	## *********ARMO EL DATASET DE TRAIN Y EL DE TEST *********
 	db_access = MongoDBUtils()
-	users_df = db_access.get_customFields()
+	users_df = db_access.get_customFields(typeOp)
 
 	# Split into training and test set
 	# 80% of the input for training and 20% for testing
@@ -36,7 +40,7 @@ def main_customFields():
 	import ml_utils as ml_utils
 
 	# convert age ranges into integers
-	y = ml_utils.convertToInt(train_data['age'])
+	y = ml_utils.convertToInt(train_data['age'],typeOp)
 
 	# Create a random forest Classifier.
 	rforest = RandomForestClassifier(n_jobs=2, random_state=0)
@@ -44,15 +48,28 @@ def main_customFields():
 	# Initialize Multinomial Naive Bayes
 	bayes = MultinomialNB()
 
+	svm = LinearSVC(loss='hinge', penalty='l2', random_state=42)
+	
+	sgd = SGDClassifier(loss='hinge', penalty='l2', random_state=42, alpha=0.001)
+
 	# Train the Classifier to take the training features and learn how they relate to the age
 	rforest.fit(train_data[features], y)
-	bayes.fit( train_data[features], y ) 
 
+	bayes.fit( train_data[features], y ) 
+	
+	svm = svm.fit(train_data[features], y) 
+	
+	sgd= sgd.fit(train_data[features], y ) 
+	
 	# Apply the Classifier we trained to the test data
 	# Create actual english names for the ages for each predicted age range
-	resultForest = ml_utils.convertToCategory(rforest.predict(test_data[features]))
-	resultBayes = ml_utils.convertToCategory(bayes.predict(test_data[features]))
+	resultForest = ml_utils.convertToCategory(rforest.predict(test_data[features]),typeOp)
+	resultBayes = ml_utils.convertToCategory(bayes.predict(test_data[features]),typeOp)
 	
+	resultSVM= ml_utils.convertToCategory(svm.predict(test_data[features]),typeOp)
+
+	resultSGD= ml_utils.convertToCategory(sgd.predict(test_data[features]),typeOp)
+
 	# View the predicted probabilities of the first 10 observations
 	rforest.predict_proba(test_data[features])[0:10]
 
@@ -65,56 +82,29 @@ def main_customFields():
 	if not os.path.exists(outdir):
    		os.mkdir(outdir)
 
-   	##RFOREST
-   	#########
+   	if not os.path.exists(outdir +"/"+typeOp):
+   		os.mkdir(outdir +"/"+typeOp)
 
-	#create confusion matrix: anything on the diagonal was classified correctly and the rest incorrectly.
-	cnf_matrix =confusion_matrix(test_data['age'].tolist(), resultForest)
-	#print "Confusion Matrix: ", cnf_matrix
+   	outdir=outdir +"/"+typeOp
 
-	# Plot non-normalized confusion matrix
-	fig2 = plt.figure()
-	ml_utils.plot_confusion_matrix(cnf_matrix, classes=db_access.getAgeRanges(),
-	                    title='Confusion matrix, without normalization for custom fields')
+   	ageRanges=[]
+   	if typeOp=='normal':
+   		ageRanges=db_access.getAgeRanges()
+   	else:
+   		ageRanges=db_access.get3AgeRanges()
+
+	##RANDOM FOREST
+	ml_utils.createConfusionMatrix(test_data['age'].tolist(),resultForest,ageRanges,'customFields','RandomForest',outdir)
 	
-	outname = 'ml_customFields_RF_confusionMatrixNotNormalized.png'
-	fullname = os.path.join(outdir, outname)    
-	fig2.savefig(fullname)
-
-	# Plot normalized confusion matrix
-	fig3 = plt.figure()
-	ml_utils.plot_confusion_matrix(cnf_matrix, classes=db_access.getAgeRanges(), normalize=True,
-                    title='Normalized confusion matrix for custom fields')
-	
-	outname = 'ml_customFields_RF_confusionMatrixNormalized.png'
-	fullname = os.path.join(outdir, outname)
-	fig3.savefig(fullname)
-
 	##BAYES
-	########
-
-	#create confusion matrix: anything on the diagonal was classified correctly and the rest incorrectly.
-	cnf_matrix2 =confusion_matrix(test_data['age'].tolist(), resultBayes)
-	#print "Confusion Matrix: ", cnf_matrix2
-
-	# Plot non-normalized confusion matrix
-	fig4 = plt.figure()
-	ml_utils.plot_confusion_matrix(cnf_matrix2, classes=db_access.getAgeRanges(),
-	                    title='Confusion matrix, without normalization for custom fields')
+	ml_utils.createConfusionMatrix(test_data['age'].tolist(),resultBayes,ageRanges,'customFields','NaiveBayes',outdir)
 	
-	outname = 'ml_customFields_BAYES_confusionMatrixNotNormalized.png'
-	fullname = os.path.join(outdir, outname)    
-	fig4.savefig(fullname)
-
-	# Plot normalized confusion matrix
-	fig5 = plt.figure()
-	ml_utils.plot_confusion_matrix(cnf_matrix2, classes=db_access.getAgeRanges(), normalize=True,
-                    title='Normalized confusion matrix for custom fields')
+	##SVM
+	ml_utils.createConfusionMatrix(test_data['age'].tolist(),resultSVM,ageRanges,'customFields','SVM',outdir)
 	
-	outname = 'ml_customFields_BAYES_confusionMatrixNormalized.png'
-	fullname = os.path.join(outdir, outname)
-	fig5.savefig(fullname)
-
+	##SGD
+	ml_utils.createConfusionMatrix(test_data['age'].tolist(),resultSGD,ageRanges,'customFields','SGD',outdir)
+	
 	# View a list of the features and their importance scores
 	print "Importance of Features: ", list(zip(train_data[features], rforest.feature_importances_))
 
@@ -128,9 +118,18 @@ def main_customFields():
 
 	accuracyRF = accuracy_score(test_data['age'].tolist(), resultForest)
 	accuracyNB = accuracy_score(test_data['age'].tolist(), resultBayes)
+	accuracySVM = accuracy_score(test_data['age'].tolist(), resultSVM)
+	accuracySGD = accuracy_score(test_data['age'].tolist(), resultSGD)
 
-	print "Bayes:",accuracyNB,"|RForest:", accuracyRF
-	return "Bayes:",accuracyNB,"|RForest:", accuracyRF
+	fscoreRF = f1_score(test_data['age'].tolist(), resultForest, average=None, labels=ageRanges)
+	fscoreNB = f1_score(test_data['age'].tolist(), resultBayes, average=None, labels=ageRanges)
+	fscoreSVM = f1_score(test_data['age'].tolist(), resultSVM, average=None, labels=ageRanges)
+	fscoreSGD = f1_score(test_data['age'].tolist(), resultSGD, average=None, labels=ageRanges)
+
+	print "ACCURACY--> Bayes:",accuracyNB,"|RForest:", accuracyRF,"|SVM:", accuracySVM,"|SGD:", accuracySGD
+	print "F-SCORE--> Bayes:",fscoreNB,"|RForest:", fscoreRF,"|SVM:", fscoreSVM,"|SGD:", fscoreSGD
+	
+	return "ACCURACY--> Bayes:",accuracyNB,"|RForest:", accuracyRF,"|SVM:", accuracySVM,"|SGD:", accuracySGD,"F-SCORE--> Bayes:",fscoreNB,"|RForest:", fscoreRF,"|SVM:", fscoreSVM,"|SGD:", fscoreSGD
 
 if __name__ == '__main__':
     main_customFields()

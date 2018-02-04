@@ -13,35 +13,42 @@ import itertools
 import time
 import matplotlib.pyplot as plt
 
-def convertToInt(ageRanges):
-	db_access = MongoDBUtils()
-	ages = db_access.getAgeRanges()
-	result=[]
-	for ar in ageRanges:
-		result.append(ages.index(ar))
-	return result
+def convertToInt(ageRanges,typeOp):
+    db_access = MongoDBUtils()
+    ages=[]
+    result=[]
+    
+    if typeOp =='normal':
+        ages = db_access.getAgeRanges()
+    else:
+        ages=['10-17','18-24','25-xx']
 
-def convertToCategory(ageRanges):
-	db_access = MongoDBUtils()
-	ages = db_access.getAgeRanges()
-	result=[]
-	for ar in ageRanges:
-		result.append(ages[ar].encode("utf-8"))
-	return result
+    for ar in ageRanges:
+        result.append(ages.index(ar))
 
-def plot_confusion_matrix(cm, classes,
-                          normalize=False,
-                          title='Confusion matrix',
-                          cmap=plt.cm.Blues):
+    return result
+
+def convertToCategory(ageRanges,typeOp):
+    db_access = MongoDBUtils()
+    if typeOp =='normal':
+        ages = db_access.getAgeRanges()
+    else:
+        ages=['10-17','18-24','25-xx']
+	
+    result=[]
+    for ar in ageRanges:
+        result.append(ages[ar].encode("utf-8"))
+    return result
+
+def plot_confusion_matrix(cm, classes,normalize,title,cmap=plt.cm.Blues):
     """
     This function prints and plots the confusion matrix.
     Normalization can be applied by setting `normalize=True`.
     """
     if normalize:
         cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
-        print("Normalized confusion matrix")
-    else:
-        print('Confusion matrix, without normalization')
+
+    print title
 
     print(cm)
 
@@ -62,3 +69,25 @@ def plot_confusion_matrix(cm, classes,
     plt.tight_layout()
     plt.ylabel('True label')
     plt.xlabel('Predicted label')
+
+def createConfusionMatrix(y_true,y_pred,classes,className,mlAlgorithm,outdir):
+    cnf_matrix =confusion_matrix(y_true, y_pred)
+
+    # Plot non-normalized confusion matrix
+    fig1 = plt.figure()
+    plot_confusion_matrix(cnf_matrix, classes,normalize=False,
+                        title='Confusion matrix, without normalization for '+className+ '-'+ mlAlgorithm)
+    
+    outname = 'ml_'+className+'_'+ mlAlgorithm+'_confusionMatrixNotNormalized.png'
+    fullname = os.path.join(outdir, outname)    
+    fig1.savefig(fullname)
+
+    # Plot normalized confusion matrix
+    fig2 = plt.figure()
+    plot_confusion_matrix(cnf_matrix, classes, normalize=True,
+                    title='Normalized confusion matrix for '+className+ '-'+ mlAlgorithm)
+    
+    outname = 'ml_'+className+'_'+ mlAlgorithm+'_confusionMatrixNormalized.png'
+    fullname = os.path.join(outdir, outname)
+    fig2.savefig(fullname)
+

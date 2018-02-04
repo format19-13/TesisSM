@@ -1,5 +1,6 @@
 #!/usr/bin/python
 # -*- coding: utf8 -*-
+from __future__ import division
 import os, sys
 sys.path.append(os.path.abspath(os.pardir))
 
@@ -12,43 +13,90 @@ from nlp_features.featBigram import main_featBigram
 import time
 import pandas as pd
 
+def getAccuracyFromProfilePic():
+	db_access = MongoDBUtils()
+	users = db_access.get_users("users")
+	cantUsers=0
+	cantAciertos=0
+
+	for user in users:
+		cantUsers=cantUsers+1
+		ageRange = user["age"].split('-')
+		profilePicAge = user["profile_pic_age"]
+
+		rangeFrom=int(ageRange[0])
+
+		try:
+			rangeTo=int(ageRange[1])
+		except: 
+			rangeTo=100
+
+		if profilePicAge != -1:		
+			if (profilePicAge >= rangeFrom and profilePicAge<=rangeTo):
+				cantAciertos=cantAciertos+1
+
+	accuracy=round(cantAciertos/cantUsers,2)
+	return accuracy
+
+#print "Calculando accuracy de Profile Pic: " 
+#print getAccuracyFromProfilePic()
+
 ##Buscar edad en bio y guardarla en el usuario si existe
-print "#################################"
-print "Ejecutando ml para custom fields"
-print "#################################"
-accCustomFields = main_customFields()
 
-print "################################################################"
-print "Ejecutando ml para subscriptionsBOW sobre listas de suscripcion"
-print "################################################################"
-accSubs = main_subscriptionBOW()
+def runMLAlgorithms(typeOp):
 
-#comparar resultados/accuracy contra profile pic
+	print "TIPO ANALISIS: " , typeOp
 
-print "########################################"
-print "Ejecutando ml para featBOW sobre tweets"
-print "########################################"
-accFeatBOW = main_featBOW()
+	print "#################################"
+	print "Ejecutando ml para custom fields"
+	print "#################################"
 
-print "###########################################"
-print "Ejecutando ml para featBigram sobre tweets"
-print "###########################################"
-accFeatBigram = main_featBigram()
+	accCustomFields = main_customFields(typeOp)
 
-print "###########################################"
-print "        ACCURACY DE CADA METODO: "
-print "###########################################"
+	print "################################################################"
+	print "Ejecutando ml para subscriptionsBOW sobre listas de suscripcion"
+	print "################################################################"
+	accSubs = main_subscriptionBOW(typeOp)
 
-print "Custom Fields: ",  accCustomFields
-print "Subscription List BOW: ",  accSubs
-print "Tweets BOW: ",  accFeatBOW
-print "Tweets Bigram: ",  accFeatBigram
+	#comparar resultados/accuracy contra profile pic
 
-df = pd.DataFrame([["Custom Fields", accCustomFields], ["Subscription List BOW", accSubs],["Tweets BOW", accFeatBOW], ["Tweets Bigram", accFeatBigram]], columns=['Method','Accuracy'])
+	print "########################################"
+	print "Ejecutando ml para featBOW sobre tweets"
+	print "########################################"
+	accFeatBOW = main_featBOW(typeOp)
 
-outdir =time.strftime("%d-%m-%Y")
-outname = 'accuracy.csv'
-fullname = os.path.join(outdir, outname)    
+	print "###########################################"
+	print "Ejecutando ml para featBigram sobre tweets"
+	print "###########################################"
+	accFeatBigram = main_featBigram(typeOp)
 
-import csv
-df.to_csv(fullname,index=False)
+	print "###########################################"
+	print "        ACCURACY DE CADA METODO: "
+	print "###########################################"
+
+	print "Custom Fields: ",  accCustomFields
+	print '--------------------------------'
+	print "Subscription List BOW: ",  accSubs
+	print '--------------------------------'
+	print "Tweets BOW: ",  accFeatBOW
+	print '--------------------------------'
+	print "Tweets Bigram: ",  accFeatBigram
+
+	df = pd.DataFrame([["Custom Fields", accCustomFields], ["Subscription List BOW", accSubs],["Tweets BOW", accFeatBOW], ["Tweets Bigram", accFeatBigram]], columns=['Method','Accuracy'])
+
+	outdir =time.strftime("%d-%m-%Y")+"/"+typeOp
+	outname = 'accuracy_'+typeOp+'.csv'
+	fullname = os.path.join(outdir, outname)    
+
+	import csv
+	df.to_csv(fullname,index=False)
+
+runMLAlgorithms('normal')
+runMLAlgorithms('pedophilia')
+
+
+
+
+
+
+

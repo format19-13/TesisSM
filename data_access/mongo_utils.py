@@ -63,6 +63,27 @@ class MongoDBUtils(object):
         except PyMongoError as e:
             self.logger.error('Error while trying to save user account', exc_info=True)
 
+
+    def get_usersIn3AgeRanges(self,collection):
+
+        try:
+
+            # Obtiene una referencia a la instancia de la DB
+            db = self.mongo_client[MONGO_DB_NAME]
+            # Obtiene el ObjectID Mongo del perfil del data source para el usuario
+            col = db[collection]
+            users=[]
+            for user in col.find(no_cursor_timeout=True):
+                if user['age'] in ['25-34','35-49','50-64','65-xx']:
+                    user['age']='25-xx'
+                    users.append(user)
+            return users
+
+        except ConnectionFailure as e:
+            self.logger.error('Mongo connection error', exc_info=True)
+        except PyMongoError as e:
+            self.logger.error('Error while trying to save user account', exc_info=True)
+
     def get_user(self,collection,screen_name):
         try:
 
@@ -118,7 +139,7 @@ class MongoDBUtils(object):
             col = db[DB_COL_USERS]
             col.update({'screen_name' : screen_name }, {'$set' : {'profile_image_url_https' : imageUrl }})
 
-    def get_tweetsText(self):
+    def get_tweetsText(self,typeOp):
 
         try:
             df = DataFrame(columns=('screen_name', 'tweets', 'age'))
@@ -129,11 +150,16 @@ class MongoDBUtils(object):
             count=0
             for user in col.find(): #para cada usuario
                 tweetText=""
+                age=user['age']
+                if typeOp == 'pedophilia':
+                    if user['age'] in ['25-34','35-49','50-64','65-xx']:
+                        age='25-xx'
+
                 for tweet in  user['tweets']:
-                    tweetText= tweetText +' '+ tweet['full_text']
+                    tweetText= tweetText +'. '+ tweet['full_text']
                 #print user['screen_name']
                 #print user['age']
-                df.loc[count] = [user['screen_name'],tweetText,user['age']]
+                df.loc[count] = [user['screen_name'],tweetText,age]
                 count += 1
             return df
 
@@ -213,31 +239,7 @@ class MongoDBUtils(object):
         except PyMongoError as e:
             self.logger.error('Error while trying to save user account', exc_info=True)
 
-    def get_tweetsTextForBigrams(self):
-
-        try:
-            df = DataFrame(columns=('screen_name', 'tweets', 'age'))
-            # Obtiene una referencia a la instancia de la DB
-            db = self.mongo_client[MONGO_DB_NAME]
-            # Obtiene el ObjectID Mongo del perfil del data source para el usuario
-            col = db[DB_COL_USERS]
-            count=0
-            for user in col.find(): #para cada usuario
-                tweetText=""
-                for tweet in  user['tweets']:
-                    tweetText= tweetText +'. '+ tweet['full_text']
-                #print user['screen_name']
-                #print user['age']
-                df.loc[count] = [user['screen_name'],tweetText,user['age']]
-                count += 1
-            return df
-
-        except ConnectionFailure as e:
-            self.logger.error('Mongo connection error', exc_info=True)
-        except PyMongoError as e:
-            self.logger.error('Error while trying to save user account', exc_info=True)
-
-    def get_SubscriptionLists(self):
+    def get_SubscriptionLists(self,typeOp):
         df = DataFrame(columns=('screen_name', 'subscriptionLists', 'age'))
         # Obtiene una referencia a la instancia de la DB
         db = self.mongo_client[MONGO_DB_NAME]
@@ -246,16 +248,21 @@ class MongoDBUtils(object):
         count=0
            
         for user in col.find(): #para cada usuario
+            age=user['age']
+            if typeOp == 'pedophilia':
+                if user['age'] in ['25-34','35-49','50-64','65-xx']:
+                    age='25-xx'
+
             subsLists=""
             try:
                 if user['listsSubscriptions'] != -1 and len(user['listsSubscriptions']) >0:
                     for lstSub in user['listsSubscriptions']:
-                        subsLists= subsLists +' '+ lstSub['name']
+                        subsLists= subsLists +'. '+ lstSub['name']
             except Exception as e:
                 print user['screen_name']
                 print e
             
-            df.loc[count] = [user['screen_name'],subsLists,user['age']]
+            df.loc[count] = [user['screen_name'],subsLists,age]
             count += 1
         return df
 
@@ -316,7 +323,11 @@ class MongoDBUtils(object):
         except PyMongoError as e:
             self.logger.error('Error while trying to save user account', exc_info=True)
 
-    def get_customFields(self):
+    def get3AgeRanges(self):
+
+        return ['10-17','18-24','25-xx']
+
+    def get_customFields(self,typeOp):
 
         try:
             df = DataFrame(columns=('screen_name', 'friends_count',  'tweets_count', 'linkedin', 'snapchat', 'instagram','facebook','followers_count','favourites_count','qtyMentions','qtyHashtags','qtyUrls', 'qtyEmojis', 'profile_pic_gender','age'))
@@ -327,11 +338,17 @@ class MongoDBUtils(object):
             count=0
             for user in col.find(): #para cada usuario
                 gender=0
+                age=user['age']
                 if user['profile_pic_gender'] == 'male' :
                     gender=1
                 elif user['profile_pic_gender'] == 'female' :
                     gender=2
-                df.loc[count] = [user['screen_name'],user['friends_count'],user['statuses_count'],user['linkedin'],user['snapchat'],user['instagram'],user['facebook'],user['followers_count'],user['favourites_count'], user['qtyMentions'],user['qtyHashtags'],user['qtyUrls'], user['qtyEmojis'], gender,user['age'] ]
+
+                if typeOp == 'pedophilia':
+                    if user['age'] in ['25-34','35-49','50-64','65-xx']:
+                        age='25-xx'
+
+                df.loc[count] = [user['screen_name'],user['friends_count'],user['statuses_count'],user['linkedin'],user['snapchat'],user['instagram'],user['facebook'],user['followers_count'],user['favourites_count'], user['qtyMentions'],user['qtyHashtags'],user['qtyUrls'], user['qtyEmojis'], gender,age ]
                 count += 1
             return df
 
@@ -530,6 +547,7 @@ class MongoDBUtils(object):
         #print 'screen_name',',', 'tweet text',',','age',',', 'ageRange',',','profile_pic_age'
         count=0
         for user in col.find(): #para cada usuario
+            print user['screen_name']
             ageReal=-1
             try:
                 regx = re.compile(user['screen_name'], re.IGNORECASE)
