@@ -30,16 +30,11 @@ from sklearn.metrics import f1_score
 
 def main_subscriptionBOW(typeOp):
 
-	## *********ARMO EL DATASET DE TRAIN Y EL DE TEST *********
-	db_access = MongoDBUtils()
-	users_df = db_access.get_SubscriptionLists(typeOp)
-	print (users_df.size)
-	# Split into training and test set
-	# 80% of the input for training and 20% for testing
+	train_data=pd.read_csv(DATASET_PATH+"/"+typeOp+"_subscriptionLists_train.csv", sep=",",dtype=str)
+	test_data=pd.read_csv(DATASET_PATH+"/"+typeOp+"_subscriptionLists_test.csv", sep=",",dtype=str)
 
-	train_data=users_df.sample(frac=0.8,random_state=200) 
-	test_data=users_df.drop(train_data.index)
-
+	print train_data.shape
+	print test_data.shape
 	##STOPWORDS EN SPANISH, SCIKIT TRAE SOLO EN INGLES
 	foo = imp.load_source('stopwords', DIR_PREFIX+'/proyectos/TesisVT/nlp_features/nlp_utils.py')
 	stopwords = foo.generateCustomStopwords()  
@@ -149,7 +144,8 @@ def main_subscriptionBOW(typeOp):
 	#******* MODEL EVALUATION *********
 	###################################
 	import ml_utils as ml_utils
-
+	db_access = MongoDBUtils()
+	
 	ageRanges=[]
    	if typeOp=='normal':
    		ageRanges=db_access.getAgeRanges()

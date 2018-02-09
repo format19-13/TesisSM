@@ -12,6 +12,7 @@ def generateCustomStopwords():
 
 	stopset = set(stopwords.words('spanish'))
 
+	'''
 	##add domain stopwords
 	stopset.add((u'hoy'))
 	stopset.add((u'más'))
@@ -38,5 +39,6 @@ def generateCustomStopwords():
 	stopset.add((u'españa'))
 	stopset.add((u'vía'))
 	stopset.add((u'gran'))
-	stopset.add((u'nuevo'))
+	stopset.add((u'nuevo'))*/
+	'''
 	return stopset

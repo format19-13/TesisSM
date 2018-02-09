@@ -25,10 +25,10 @@ from os import path
 from scipy.misc import imread
 import matplotlib.pyplot as plt
 import random
-
+from nltk.corpus import stopwords
 from wordcloud import WordCloud
 
-def main():
+def main_wordcloudsTweets():
 	##WORDCLOUD FOR EVERY AGE RANGE
 	db_access = MongoDBUtils()
 	ageRanges = db_access.getAgeRanges()
@@ -36,28 +36,28 @@ def main():
 	htmlParser= HTMLParser.HTMLParser()
 
 	for ar in ageRanges:
-
+		print ar
 		#Decode data
 		text = db_access.get_tweetsTextFromAgeRange(ar)
-		result=text
-		result=re.sub(' RT ',"", result)
-		result=re.sub(r'(\s)@\w+',"", result)
-		result = re.sub(r"http\S+", "", result)
-
 		punct = string.punctuation.replace("#", "¿¡")
-		result = remove_from_string(result, punct)
-		words=result.lower().split()
+		result = remove_from_string(text, punct)
+		words=result.split()
 
 	 	textFiltered=""
 		
-		foo = imp.load_source('scrapingFacebook', DIR_PREFIX+'/proyectos/TesisVT/nlp_features/nlp_utils.py')
-		stopwords = foo.generateCustomStopwords()                      
+		#foo = imp.load_source('scrapingFacebook', DIR_PREFIX+'/proyectos/TesisVT/nlp_features/nlp_utils.py')
+		#stopwords = foo.generateCustomStopwords()                      
+
+		stop = set(stopwords.words('spanish'))
 		
 		for w in words:	
-			if w.decode("utf-8") not in stopwords:
+			print w
+			if w.decode("utf-8") not in stop:
 				textFiltered=textFiltered +' '+ w.encode("utf-8")
 
 		wordcloud = WordCloud(width=1600, height=800).generate(textFiltered.decode("utf-8"))
+		print "Dibujando wordcloud para ", ar, " ..."
+
 		# Open a plot of the generated image.
 		plt.figure( figsize=(20,10), facecolor='k')
 		plt.title('wordcloud ages:'+ ar)
@@ -108,6 +108,3 @@ def generateCustomStopwords():
 	stopset.add((u'gran'))
 	stopset.add((u'nuevo'))
 	return stopset
-
-if __name__ == '__main__':
-    main()

@@ -51,7 +51,7 @@ def runMLAlgorithms(typeOp):
 	print "Ejecutando ml para custom fields"
 	print "#################################"
 
-	accCustomFields = main_customFields(typeOp)
+	accCustomFields = 0#main_customFields(typeOp)
 
 	print "################################################################"
 	print "Ejecutando ml para subscriptionsBOW sobre listas de suscripcion"

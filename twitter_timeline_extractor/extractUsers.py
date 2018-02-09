@@ -316,25 +316,28 @@ class TwitterStreamer(Twython):
         qtyHashtags=0
         qtyUrls=0
         qtyEmojis=0
+        qtyUppercase=0
 
         emojis_list = map(lambda x: ''.join(x.split()), emoji.UNICODE_EMOJI.keys())
         r = re.compile('|'.join(re.escape(p) for p in emojis_list)) #emojis
         re2="[>]?[:;Xx][']?[-=]?[)(PpDdOo$]|<3" #emoticons
 
         for tweet in  user['tweets']:
-            txt=tweet['full_text']
+            txt= re.sub(r"http\S+", "",tweet['full_text'])
+            txt=re.sub(r'@\w+',"", txt)
 
             qtyMentions=qtyMentions+len(tweet['entities']['user_mentions'])
             qtyHashtags=qtyHashtags+len(tweet['entities']['hashtags'])
             qtyUrls=qtyUrls+len(tweet['entities']['urls'])
             qtyEmojis= qtyEmojis + len(r.findall(txt))+len(re.findall(re2,txt))
-
+            qtyUppercase= qtyUppercase + len(re.findall(r'[A-Z]',txt))
             qtyTweets = len(user['tweets'])
 
             user["qtyMentions"]=round(qtyMentions/qtyTweets,2)
             user["qtyHashtags"]=round(qtyHashtags/qtyTweets,2)
             user["qtyUrls"]=round(qtyUrls/qtyTweets,2)
             user["qtyEmojis"]=round(qtyEmojis/qtyTweets,2)
+            user["qtyUppercase"]=round(qtyUppercase/qtyTweets,2)
         return user
                    
 def main():

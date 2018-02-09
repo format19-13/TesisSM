@@ -30,22 +30,9 @@ from sklearn.linear_model import SGDClassifier
 from sklearn.metrics import f1_score
 
 def main_featBigram(typeOp):
-	## *********ARMO EL DATASET DE TRAIN Y EL DE TEST *********
-	db_access = MongoDBUtils()
-	users_df = db_access.get_tweetsText(typeOp)
 
-	for (i,row) in users_df["tweets"].iteritems():
-		result=''
-		result=re.sub(' RT ',"", row)
-		result= re.sub(r"http\S+", "",result)
-		result=re.sub(r'@\w+',"", result)
-		users_df["tweets"][i]=result.encode("utf-8").decode("utf-8")
-
-	# Split into training and test set
-	# 80% of the input for training and 20% for testing
-
-	train_data=users_df.sample(frac=0.8,random_state=200) 
-	test_data=users_df.drop(train_data.index)
+	train_data=pd.read_csv(DATASET_PATH+"/"+typeOp+"_tweets_train.csv", sep=",",dtype=str)
+	test_data=pd.read_csv(DATASET_PATH+"/"+typeOp+"_tweets_test.csv", sep=",",dtype=str)
 
 	bigram_vectorizer = CountVectorizer(ngram_range=(1,3), token_pattern=r'\b\w+\b', min_df=1,strip_accents='unicode',max_features=5000) 
 
@@ -155,6 +142,7 @@ def main_featBigram(typeOp):
 	###################################
 	
 	import ml_utils as ml_utils
+	db_access = MongoDBUtils()
 
 	ageRanges=[]
 	if typeOp=='normal':

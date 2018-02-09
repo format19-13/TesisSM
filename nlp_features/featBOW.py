@@ -27,53 +27,44 @@ import matplotlib.pyplot as plt
 from sklearn.svm import LinearSVC
 from sklearn.linear_model import SGDClassifier
 from sklearn.metrics import f1_score
+from sklearn.feature_extraction.text import TfidfVectorizer
 
 def main_featBOW(typeOp):
-
-	## *********ARMO EL DATASET DE TRAIN Y EL DE TEST *********
-	db_access = MongoDBUtils()
-
-	users_df = db_access.get_tweetsText(typeOp)
-
-	##https://www.analyticsvidhya.com/blog/2015/06/quick-guide-text-data-cleaning-python/
-	##TWEETS CLEANUP
-	#https://github.com/myleott/ark-twokenize-py
-	#Decode data
-
-	for (i,row) in users_df["tweets"].iteritems():
-		result=''
-		result=re.sub(' RT ',"", row)
-		result= re.sub(r"http\S+", "",result)
-		result=re.sub(r'@\w+',"", result)
-		users_df["tweets"][i]=result
-
-	# Split into training and test set
-	# 80% of the input for training and 20% for testing
-
-	train_data=users_df.sample(frac=0.8,random_state=200) 
-	test_data=users_df.drop(train_data.index)
+	
+	train_data=pd.read_csv(DATASET_PATH+"/"+typeOp+"_tweets_train.csv", sep=",",dtype=str)
+	test_data=pd.read_csv(DATASET_PATH+"/"+typeOp+"_tweets_test.csv", sep=",",dtype=str)
 
 	##STOPWORDS EN SPANISH, SCIKIT TRAE SOLO EN INGLES
 	foo = imp.load_source('stopwords', DIR_PREFIX+'/proyectos/TesisVT/nlp_features/nlp_utils.py')
 	stopwords = foo.generateCustomStopwords()  
 
-	count_vect = CountVectorizer(stop_words=stopwords, max_features=5000 ) #Para hacer bag of words
-	X_train_counts = count_vect.fit_transform(train_data.tweets)
+	#count_vect = CountVectorizer(stop_words=stopwords, max_features=5000 ) #Para hacer bag of words
+	#X_train_counts = count_vect.fit_transform(train_data.tweets)
 	# fit_transform() fits the model and learns the vocabulary; second, it transforms our training data
 	# into feature vectors. 
+
+	transformer_tfidf = TfidfVectorizer(smooth_idf=False,lowercase=False,stop_words=stopwords,max_features=5000)
+	tfidf = transformer_tfidf.fit_transform(train_data.tweets)
+
+	indices = np.argsort(transformer_tfidf.idf_)[::-1]
+	features = transformer_tfidf.get_feature_names()
+	top_n = 500
+	idf = transformer_tfidf.idf_
+	valuesTfIdf = zip(idf,transformer_tfidf.get_feature_names())
+	#print(tabulate(values, headers, tablefmt="plain"))
 
 	## ********* APLICO BAG OF WORDS *********
 	##To see occurrences of a specific word:
 	#print count_vect.vocabulary_.get(u'amigos')
 
-	train_data_features = X_train_counts.toarray()
+	train_data_features = tfidf.toarray()
 	#print len(train_data) #186 users en train
 
 	#print train_data_features.shape 
 	#(186, 500) --> It has 212 rows and 500 features (500 most frequent words).
 
 	# Take a look at the words in the vocabulary
-	vocab = count_vect.get_feature_names()
+	vocab = transformer_tfidf.get_feature_names()
 	#print vocab
 
 	# Sum up the counts of each vocabulary word
@@ -113,7 +104,7 @@ def main_featBOW(typeOp):
 	# Read the test data
 
 	# Get a bag of words for the test set, and convert to a numpy array
-	test_data_features = count_vect.transform(test_data.tweets)
+	test_data_features = transformer_tfidf.transform(test_data.tweets)
 	test_data_features = test_data_features.toarray()
 
 	# Use the random forest to make age range predictions
@@ -152,23 +143,29 @@ def main_featBOW(typeOp):
 	fullname = os.path.join(outdir, outname)    
 	output.to_csv(fullname,index=False)
 
+	outname = 'Bag_of_Words_Tweets_TfIdf.csv'
+	fullname = os.path.join(outdir, outname)  
+
+	df_tfidf= pd.DataFrame(valuesTfIdf, columns = ["score", "word"]) 
+	df_tfidf.to_csv(fullname,index=False)
+
 	# View a list of the features and their importance scores
 	#print "Importance of Features: ", sort(zip(train_data_features, forest.feature_importances_))
 
-	headers = ["name", "score"]
-	values = sorted(zip(vocab, forest.feature_importances_), key=lambda x: x[1] * -1)
-	print(tabulate(values, headers, tablefmt="plain"))
+	#headers = ["name", "score"]
+	#values = sorted(zip(vocab, forest.feature_importances_), key=lambda x: x[1] * -1)
+	#print(tabulate(values, headers, tablefmt="plain"))
 
 	###################################
 	#******* MODEL EVALUATION *********
 	###################################
 
 	import ml_utils as ml_utils
+	db_access = MongoDBUtils()
 	
 	ageRanges=[]
    	if typeOp=='normal':
    		ageRanges=db_access.getAgeRanges()
-   		print "ERROR$##$$#%#$$#"
    	else:
    		ageRanges=db_access.get3AgeRanges()
 

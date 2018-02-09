@@ -28,7 +28,7 @@ import random
 
 from wordcloud import WordCloud
 
-def main():
+def main_wordcloudsFollowing():
 	##WORDCLOUD FOR EVERY AGE RANGE
 	db_access = MongoDBUtils()
 	ageRanges = db_access.getAgeRanges()
@@ -49,6 +49,3 @@ def main():
 		plt.tight_layout(pad=0)
 		plt.savefig('wordcloud_subscriptions'+ ar +".png", facecolor='k', bbox_inches='tight')
 
-
-if __name__ == '__main__':
-    main()

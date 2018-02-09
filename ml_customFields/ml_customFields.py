@@ -19,16 +19,9 @@ from sklearn.linear_model import SGDClassifier
 from sklearn.metrics import f1_score
 
 def main_customFields(typeOp):
-
-	## *********ARMO EL DATASET DE TRAIN Y EL DE TEST *********
-	db_access = MongoDBUtils()
-	users_df = db_access.get_customFields(typeOp)
-
-	# Split into training and test set
-	# 80% of the input for training and 20% for testing
-
-	train_data=users_df.sample(frac=0.8,random_state=200) 
-	test_data=users_df.drop(train_data.index)
+	
+	train_data=pd.read_csv(DATASET_PATH+"/"+typeOp+"_customFields_train.csv", sep=",",dtype=str)
+	test_data=pd.read_csv(DATASET_PATH+"/"+typeOp+"_customFields_test.csv", sep=",",dtype=str)
 
 	# Show the number of observations for the test and training dataframes
 	print 'Number of observations in the training data:', len(train_data)
@@ -76,7 +69,8 @@ def main_customFields(typeOp):
 	#############################################
 	# EVALUATE THE MODEL
 	#############################################
-
+	db_access = MongoDBUtils()
+	
 	outdir =time.strftime("%d-%m-%Y")
 	
 	if not os.path.exists(outdir):

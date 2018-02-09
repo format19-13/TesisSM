@@ -184,60 +184,56 @@ class MongoDBUtils(object):
                 cont = cont +1
 
                 try:
-                    user['qtyEmojis']
+                    user['qtyUppercase']
 
-                    if user['qtyMentions']==0 and user['qtyHashtags']==0 and user['qtyUrls']==0  and user['qtyEmojis']==0:
+                except:
+                    if True:#user['qtyUppercase']==0: #and user['qtyMentions']==0 and user['qtyHashtags']==0 and user['qtyUrls']==0  and user['qtyEmojis']==0:
                         qtyMentions=0
                         qtyHashtags=0
                         qtyUrls=0
                         qtyEmojis=0
+                        qtyUppercase=0
 
-                        print user['screen_name']
+                        print user['screen_name'], "-", cont
 
                         for tweet in  user['tweets']:
                             
+                            txt= re.sub(r"http\S+", "",tweet['full_text'])
+                            txt=re.sub(r'@\w+',"", txt)
+
+                            qtyUppercase= qtyUppercase + len(re.findall(r'[A-Z]',txt)) 
                             qtyMentions=qtyMentions+len(tweet['entities']['user_mentions'])
                             qtyHashtags=qtyHashtags+len(tweet['entities']['hashtags'])
                             qtyUrls=qtyUrls+len(tweet['entities']['urls'])
 
-                            txt=tweet['full_text']
                            # print tweet['full_text'] ,"-", len(tweet['entities']['user_mentions'])
                                 
                             qtyEmojis= qtyEmojis + len(r.findall(txt))+len(re.findall(re2,txt))
                             
                             qtyTweets = len(user['tweets'])
 
-                        col.update({'screen_name' : user['screen_name'] }, {'$set' : {'qtyMentions' : round(qtyMentions/qtyTweets,2) }})
-                        col.update({'screen_name' : user['screen_name'] }, {'$set' : {'qtyHashtags' : round(qtyHashtags/qtyTweets,2) }})
-                        col.update({'screen_name' : user['screen_name'] }, {'$set' : {'qtyUrls'     : round(qtyUrls/qtyTweets,2) }})
-                        col.update({'screen_name' : user['screen_name'] }, {'$set' : {'qtyEmojis'     : round(qtyEmojis/qtyTweets,2) }})
-                except : 
-                    print cont
-                    ##Si no se calcularon las cantidades aun, las calculo
-                    qtyMentions=0
-                    qtyHashtags=0
-                    qtyUrls=0
-                    qtyEmojis=0
-                    for tweet in  user['tweets']:
-                        
-                        qtyMentions=qtyMentions+len(tweet['entities']['user_mentions'])
-                        qtyHashtags=qtyHashtags+len(tweet['entities']['hashtags'])
-                        qtyUrls=qtyUrls+len(tweet['entities']['urls'])
-                        qtyMentions=0
-                        txt=tweet['full_text']
-                        
-                        qtyEmojis= qtyEmojis + len(r.findall(txt))+len(re.findall(re2,txt))
-                        qtyTweets = len(user['tweets'])
 
-                    col.update({'screen_name' : user['screen_name'] }, {'$set' : {'qtyMentions' : round(qtyMentions/qtyTweets,2) }})
-                    col.update({'screen_name' : user['screen_name'] }, {'$set' : {'qtyHashtags' : round(qtyHashtags/qtyTweets,2) }})
-                    col.update({'screen_name' : user['screen_name'] }, {'$set' : {'qtyUrls'     : round(qtyUrls/qtyTweets,2) }})
-                    col.update({'screen_name' : user['screen_name'] }, {'$set' : {'qtyEmojis'     : round(qtyEmojis/qtyTweets,2) }})
+                        if round(qtyMentions/qtyTweets,2)  != user['qtyMentions']:
+                            print "cambio qtyMentions "  ,  round(qtyMentions/qtyTweets,2), '"-', user['qtyMentions'] 
+                            col.update({'screen_name' : user['screen_name'] }, {'$set' : {'qtyMentions' : round(qtyMentions/qtyTweets,2) }})
 
+                        if round(qtyHashtags/qtyTweets,2)  != user['qtyHashtags']:
+                            print "cambio qtyHashtags "  ,  round(qtyHashtags/qtyTweets,2), '"-', user['qtyHashtags']
+                            col.update({'screen_name' : user['screen_name'] }, {'$set' : {'qtyHashtags' : round(qtyHashtags/qtyTweets,2) }}) 
+
+                        if round(qtyUrls/qtyTweets,2)  != user['qtyUrls']:
+                            print "cambio qtyUrls ",  round(qtyUrls/qtyTweets,2), '"-', user['qtyUrls']
+                            col.update({'screen_name' : user['screen_name'] }, {'$set' : {'qtyUrls'     : round(qtyUrls/qtyTweets,2) }})
+
+                        if round(qtyEmojis/qtyTweets,2)  != user['qtyEmojis']:
+                            print "cambio qtyEmojis " ,  round(qtyEmojis/qtyTweets,2), '"-', user['qtyEmojis'] 
+                            col.update({'screen_name' : user['screen_name'] }, {'$set' : {'qtyEmojis'     : round(qtyEmojis/qtyTweets,2) }})
+
+                        col.update({'screen_name' : user['screen_name'] }, {'$set' : {'qtyUppercase' : round(qtyUppercase/qtyTweets,2) }})
         except ConnectionFailure as e:
             self.logger.error('Mongo connection error', exc_info=True)
-        except PyMongoError as e:
-            self.logger.error('Error while trying to save user account', exc_info=True)
+        except:
+            self.logger.error('Error', exc_info=True)
 
     def get_SubscriptionLists(self,typeOp):
         df = DataFrame(columns=('screen_name', 'subscriptionLists', 'age'))
@@ -277,7 +273,13 @@ class MongoDBUtils(object):
             tweetText=""
             for user in col.find({"age":ageRange}) :
                 for tweet in  user['tweets']:
-                    tweetText= tweetText +' '+ tweet['full_text']
+                    cleanedTweet= re.sub(r"http\S+", "",tweet['full_text'])
+                    cleanedTweet=re.sub(r'@\w+',"", cleanedTweet).lower().replace("\n","").replace("\r","")
+
+                    if tweetText =="":
+                        tweetText= cleanedTweet.encode('utf-8')
+                    else:
+                        tweetText= tweetText +' '+ cleanedTweet.encode('utf-8')
             return tweetText        
         except ConnectionFailure as e:
             self.logger.error('Mongo connection error', exc_info=True)
@@ -298,7 +300,7 @@ class MongoDBUtils(object):
                         for subslist in  user['listsSubscriptions']:
                             
                             if len(subslist)>0:
-                                result = result +' '+ (subslist['name'].replace(" ", "_"))
+                                result = result +' '+ subslist['name']#.replace(" ", "_"))
                 except: 
                     #print 'usuario: ',user['screen_name'],' no tiene listas'
                     pass
@@ -603,4 +605,143 @@ class MongoDBUtils(object):
         # Obtiene el ObjectID Mongo del perfil del data source para el usuario
         col = db['users']
         return col.find({'listsSubscriptions':{'$exists': False}}, no_cursor_timeout=True)
+
+    def export_tweetsText_toCSV(self,typeOp):
+        print "Exporting tweetsText ..."
+        try:
+            df = DataFrame(columns=('screen_name', 'tweets', 'age'))
+            # Obtiene una referencia a la instancia de la DB
+            db = self.mongo_client[MONGO_DB_NAME]
+            # Obtiene el ObjectID Mongo del perfil del data source para el usuario
+            col = db[DB_COL_USERS]
+            count=0
+            for user in col.find(): #para cada usuario
+                tweetText=""
+                age=user['age']
+                if typeOp == 'pedophilia':
+                    if user['age'] in ['25-34','35-49','50-64','65-xx']:
+                        age='25-xx'
+
+                for tweet in  user['tweets']:
+                ##https://www.analyticsvidhya.com/blog/2015/06/quick-guide-text-data-cleaning-python/
+                ##TWEETS CLEANUP
+                #https://github.com/myleott/ark-twokenize-py
+                #Decode data
+
+                    cleanedTweet= re.sub(r"http\S+", "",tweet['full_text'])
+                    cleanedTweet=re.sub(r'@\w+',"", cleanedTweet).lower().replace("\n","").replace("\r","")
+
+                    if tweetText =="":
+                        tweetText= cleanedTweet.encode('utf-8')
+                    else:
+                        tweetText= tweetText +'. '+ cleanedTweet.encode('utf-8')
+
+                df.loc[count] = [user['screen_name'],tweetText,age]
+                count += 1
+
+            # Split into training and test set
+            # 80% of the input for training and 20% for testing
+            train_data=df.sample(frac=0.8,random_state=200) 
+            test_data=df.drop(train_data.index)
+            
+            df.to_csv(typeOp+"_tweets_COMPLETE.csv",index=False)
+            train_data.to_csv(typeOp+"_tweets_train.csv",index=False)
+            test_data.to_csv(typeOp+"_tweets_test.csv",index=False)
+
+        except ConnectionFailure as e:
+            self.logger.error('Mongo connection error', exc_info=True)
+        except PyMongoError as e:
+            self.logger.error('Error while trying to save user account', exc_info=True)
+
+    def export_subscriptionLists_toCSV(self,typeOp):
+        print "Exporting Subscription Lists ..."
+        try:
+            df = DataFrame(columns=('screen_name', 'subscriptionLists', 'age'))
+            # Obtiene una referencia a la instancia de la DB
+            db = self.mongo_client[MONGO_DB_NAME]
+            # Obtiene el ObjectID Mongo del perfil del data source para el usuario
+            col = db[DB_COL_USERS]
+            count=0
+            for user in col.find(): #para cada usuario
+                tweetText=""
+                age=user['age']
+                if typeOp == 'pedophilia':
+                    if user['age'] in ['25-34','35-49','50-64','65-xx']:
+                        age='25-xx'
+
+                subsLists=""
+                try:
+                    if user['listsSubscriptions'] != -1 and len(user['listsSubscriptions']) >0:
+                        for lstSub in user['listsSubscriptions']:
+                            subscr=lstSub['name'].encode('utf-8')                     
+                            subscr=subscr.lower().replace("\n","").replace("\r","")
+
+                            if subsLists =="":
+                                subsLists= subscr
+                            else:
+                                subsLists= subsLists +'. '+ subscr
+
+                    if subsLists != "":
+                        df.loc[count] = [user['screen_name'],subsLists,age]
+                        count += 1
+
+                except Exception as e:
+                    print user['screen_name']
+                    print e
+
+
+            # Split into training and test set
+            # 80% of the input for training and 20% for testing
+            train_data=df.sample(frac=0.8,random_state=200) 
+            test_data=df.drop(train_data.index)
+
+            print train_data.shape
+            print test_data.shape
+            
+            df.to_csv(typeOp+"_subscriptionLists_COMPLETE.csv",index=False)
+            train_data.to_csv(typeOp+"_subscriptionLists_train.csv",index=False)
+            test_data.to_csv(typeOp+"_subscriptionLists_test.csv",index=False)
+
+        except ConnectionFailure as e:
+            self.logger.error('Mongo connection error', exc_info=True)
+        except PyMongoError as e:
+            self.logger.error('Error while trying to save user account', exc_info=True)
+
+    def export_customFields(self,typeOp):
+        print "Exporting Custom Fields ..."
+        try:
+            df = DataFrame(columns=('screen_name', 'friends_count',  'tweets_count', 'linkedin', 'snapchat', 'instagram','facebook','followers_count','favourites_count','qtyMentions','qtyHashtags','qtyUrls', 'qtyEmojis', 'profile_pic_gender','age'))
+            # Obtiene una referencia a la instancia de la DB
+            db = self.mongo_client[MONGO_DB_NAME]
+            # Obtiene el ObjectID Mongo del perfil del data source para el usuario
+            col = db[DB_COL_USERS]
+            count=0
+            for user in col.find(): #para cada usuario
+                gender=0
+                age=user['age']
+                if user['profile_pic_gender'] == 'male' :
+                    gender=1
+                elif user['profile_pic_gender'] == 'female' :
+                    gender=2
+
+                if typeOp == 'pedophilia':
+                    if user['age'] in ['25-34','35-49','50-64','65-xx']:
+                        age='25-xx'
+
+                df.loc[count] = [user['screen_name'],user['friends_count'],user['statuses_count'],user['linkedin'],user['snapchat'],user['instagram'],user['facebook'],user['followers_count'],user['favourites_count'], user['qtyMentions'],user['qtyHashtags'],user['qtyUrls'], user['qtyEmojis'], gender,age ]
+                count += 1
+            
+            # Split into training and test set
+            # 80% of the input for training and 20% for testing
+            train_data=df.sample(frac=0.8,random_state=200) 
+            test_data=df.drop(train_data.index)
+            
+            df.to_csv(typeOp+"_customFields_COMPLETE.csv",index=False)
+            train_data.to_csv(typeOp+"_customFields_train.csv",index=False)
+            test_data.to_csv(typeOp+"_customFields_test.csv",index=False)
+
+        except ConnectionFailure as e:
+            self.logger.error('Mongo connection error', exc_info=True)
+        except PyMongoError as e:
+            self.logger.error('Error while trying to save user account', exc_info=True)
 
