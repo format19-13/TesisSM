@@ -56,7 +56,7 @@ def runMLAlgorithms(typeOp):
 	print "################################################################"
 	print "Ejecutando ml para subscriptionsBOW sobre listas de suscripcion"
 	print "################################################################"
-	accSubs = main_subscriptionBOW(typeOp)
+	accSubs = 0#main_subscriptionBOW(typeOp)
 
 	#comparar resultados/accuracy contra profile pic
 

@@ -187,7 +187,7 @@ class MongoDBUtils(object):
                     user['qtyUppercase']
 
                 except:
-                    if True:#user['qtyUppercase']==0: #and user['qtyMentions']==0 and user['qtyHashtags']==0 and user['qtyUrls']==0  and user['qtyEmojis']==0:
+                    if user['qtyUppercase']==0 and user['qtyMentions']==0 and user['qtyHashtags']==0 and user['qtyUrls']==0  and user['qtyEmojis']==0:
                         qtyMentions=0
                         qtyHashtags=0
                         qtyUrls=0
@@ -744,4 +744,35 @@ class MongoDBUtils(object):
             self.logger.error('Mongo connection error', exc_info=True)
         except PyMongoError as e:
             self.logger.error('Error while trying to save user account', exc_info=True)
+
+    def export_tweetsTextFromAgeRange(self, ageRange):
+        print "Exporting Tweets of age: ", ageRange, " ..."
+
+        try:
+            df = DataFrame(columns=('screen_name', 'tweets', 'age'))
+            # Obtiene una referencia a la instancia de la DB
+            db = self.mongo_client[MONGO_DB_NAME]
+            # Obtiene el ObjectID Mongo del perfil del data source para el usuario
+            col = db[DB_COL_USERS]
+            count=0
+            for user in col.find({"age":ageRange}) :
+                tweetText=""
+                age=user['age']
+
+                for tweet in  user['tweets']:
+                    cleanedTweet= re.sub(r"http\S+", "",tweet['full_text'])
+                    cleanedTweet=re.sub(r'@\w+',"", cleanedTweet).lower().replace("\n","").replace("\r","")
+
+                    if tweetText =="":
+                        tweetText= cleanedTweet.encode('utf-8')
+                    else:
+                        tweetText= tweetText +' '+ cleanedTweet.encode('utf-8')
+
+                df.loc[count] = [user['screen_name'],tweetText,age]
+                count += 1
+            
+            df.to_csv("tweets_"+ageRange+".csv",index=False)
+
+        except Exception as e:
+            print e
 

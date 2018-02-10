@@ -25,4 +25,4 @@ from extractListsSubscriptions import TwitterStreamerSubscriptions
 ##Mover usuarios etiquetados en paso anterior a la collection "users"
 #print "Ejecutando extractUsers.py"
 db_access = MongoDBUtils()
-db_access.populate_mentions_hashtags_urls()
+db_access.export_tweetsTextFromAgeRange('10-17')

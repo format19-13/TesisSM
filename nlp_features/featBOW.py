@@ -1,4 +1,5 @@
-
+# coding=utf-8
+# This Python file uses the following encoding: utf-8
 import os,sys
 import os.path
 import numpy as np
@@ -50,7 +51,9 @@ def main_featBOW(typeOp):
 	features = transformer_tfidf.get_feature_names()
 	top_n = 500
 	idf = transformer_tfidf.idf_
-	valuesTfIdf = zip(idf,transformer_tfidf.get_feature_names())
+
+	valuesTfIdf = sorted(zip(idf,transformer_tfidf.get_feature_names()), key=lambda x: x[0])
+	print valuesTfIdf
 	#print(tabulate(values, headers, tablefmt="plain"))
 
 	## ********* APLICO BAG OF WORDS *********

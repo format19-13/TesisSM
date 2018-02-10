@@ -1,4 +1,3 @@
-
 # coding=utf-8
 # This Python file uses the following encoding: utf-8
 import os,sys
@@ -19,7 +18,7 @@ import nltk
 import HTMLParser
 from nltk.corpus import stopwords
 from nltk.tokenize import sent_tokenize, word_tokenize
-
+import imp
 # Simple WordCloud
 from os import path
 from scipy.misc import imread
@@ -35,27 +34,30 @@ def main_wordcloudsTweets():
 	#ageRanges=['18-24']
 	htmlParser= HTMLParser.HTMLParser()
 
+	##STOPWORDS EN SPANISH, SCIKIT TRAE SOLO EN INGLES
+	foo = imp.load_source('stopwords', DIR_PREFIX+'/proyectos/TesisVT/nlp_features/nlp_utils.py')
+	stopwords = foo.generateCustomStopwords()  
+
 	for ar in ageRanges:
 		print ar
 		#Decode data
-		text = db_access.get_tweetsTextFromAgeRange(ar)
+		df_tweets=pd.read_csv(DATASET_PATH+"/tweets_"+ar+".csv", sep=",",dtype=str)
+	
+		text = ' '.join(df_tweets['tweets'])
 		punct = string.punctuation.replace("#", "¿¡")
 		result = remove_from_string(text, punct)
 		words=result.split()
 
-	 	textFiltered=""
+	 	textFiltered=u""
 		
-		#foo = imp.load_source('scrapingFacebook', DIR_PREFIX+'/proyectos/TesisVT/nlp_features/nlp_utils.py')
-		#stopwords = foo.generateCustomStopwords()                      
-
-		stop = set(stopwords.words('spanish'))
+		#stop = set(stopwords.words('spanish'))
 		
 		for w in words:	
 			print w
-			if w.decode("utf-8") not in stop:
-				textFiltered=textFiltered +' '+ w.encode("utf-8")
+			if w not in stopwords:
+				textFiltered=textFiltered +u' '+ unicode(w,"utf-8","ignore")
 
-		wordcloud = WordCloud(width=1600, height=800).generate(textFiltered.decode("utf-8"))
+		wordcloud = WordCloud(width=1600, height=800).generate(textFiltered)
 		print "Dibujando wordcloud para ", ar, " ..."
 
 		# Open a plot of the generated image.
