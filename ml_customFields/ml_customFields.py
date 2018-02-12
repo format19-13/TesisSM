@@ -17,23 +17,41 @@ import matplotlib.pyplot as plt
 from sklearn.svm import LinearSVC
 from sklearn.linear_model import SGDClassifier
 from sklearn.metrics import f1_score
+from tabulate import tabulate
 
-def main_customFields(typeOp):
+def main_customFields(typeOp,balanced):
 	
-	train_data=pd.read_csv(DATASET_PATH+"/"+typeOp+"_customFields_train.csv", sep=",",dtype=str)
-	test_data=pd.read_csv(DATASET_PATH+"/"+typeOp+"_customFields_test.csv", sep=",",dtype=str)
+	if balanced == 'balanced':
+		train_data=pd.read_csv(DATASET_PATH+"/customFields_balanced_train.csv", sep=",",dtype=str)
+		test_data=pd.read_csv(DATASET_PATH+"/customFields_balanced_test.csv", sep=",",dtype=str)
+	else:
+		train_data=pd.read_csv(DATASET_PATH+"/"+typeOp+"_customFields_train.csv", sep=",",dtype=str)
+		test_data=pd.read_csv(DATASET_PATH+"/"+typeOp+"_customFields_test.csv", sep=",",dtype=str)
 
 	# Show the number of observations for the test and training dataframes
 	print 'Number of observations in the training data:', len(train_data)
 	print 'Number of observations in the test data:',len(test_data)
 		
 	# Create a list of the feature column's names (everything but the screen_name and age)
-	features = users_df.columns[1:(len(users_df.columns)-1)]
+	features = train_data.columns[1:(len(train_data.columns)-1)]
 
 	import ml_utils as ml_utils
 
 	# convert age ranges into integers
 	y = ml_utils.convertToInt(train_data['age'],typeOp)
+
+	########################################
+	#******* HYPERPARAMETER TUNING *********
+	########################################
+	
+	import ml_utils as ml_utils
+	#PARAMETERS TUNING
+	#print ml_utils.SVM_param_selection(train_data[features], train_data["age"]) #RESULT: 
+	#print ml_utils.RandomForest_param_selection(train_data[features], train_data["age"])#RESULT:
+	print ml_utils.SGD_param_selection(train_data[features], train_data["age"]) #RESULT:
+
+
+
 
 	# Create a random forest Classifier.
 	rforest = RandomForestClassifier(n_jobs=2, random_state=0)
@@ -43,7 +61,7 @@ def main_customFields(typeOp):
 
 	svm = LinearSVC(loss='hinge', penalty='l2', random_state=42)
 	
-	sgd = SGDClassifier(loss='hinge', penalty='l2', random_state=42, alpha=0.001)
+	sgd = SGDClassifier(loss='log', penalty='l1', random_state=42, alpha=0.001, n_iter=50) #RESULTS:{'penalty': 'l1', 'alpha': 0.001, 'n_iter': 50, 'loss': 'log'}
 
 	# Train the Classifier to take the training features and learn how they relate to the age
 	rforest.fit(train_data[features], y)
@@ -99,9 +117,6 @@ def main_customFields(typeOp):
 	##SGD
 	ml_utils.createConfusionMatrix(test_data['age'].tolist(),resultSGD,ageRanges,'customFields','SGD',outdir)
 	
-	# View a list of the features and their importance scores
-	print "Importance of Features: ", list(zip(train_data[features], rforest.feature_importances_))
-
 	# Copy the results to a pandas dataframe 
 	output = pd.DataFrame( data={"id":test_data["screen_name"], "realAge":test_data["age"], "ageRandomForest":resultForest,"ageNaiveBayes":resultBayes})
 	#print output
@@ -122,6 +137,14 @@ def main_customFields(typeOp):
 
 	print "ACCURACY--> Bayes:",accuracyNB,"|RForest:", accuracyRF,"|SVM:", accuracySVM,"|SGD:", accuracySGD
 	print "F-SCORE--> Bayes:",fscoreNB,"|RForest:", fscoreRF,"|SVM:", fscoreSVM,"|SGD:", fscoreSGD
+
+	# View a list of the features and their importance scores
+	headers = ["name", "score"]
+	print "Importance of Features: "#, sorted(list(zip(train_data[features], rforest.feature_importances_)), key=lambda x: x[1])
+
+	values = sorted(zip(train_data[features], rforest.feature_importances_), key=lambda x: x[1] * -1)
+	print tabulate(values, headers, tablefmt="plain")
+
 	
 	return "ACCURACY--> Bayes:",accuracyNB,"|RForest:", accuracyRF,"|SVM:", accuracySVM,"|SGD:", accuracySGD,"F-SCORE--> Bayes:",fscoreNB,"|RForest:", fscoreRF,"|SVM:", fscoreSVM,"|SGD:", fscoreSGD
 

@@ -1,0 +1,9 @@
+Method,Accuracy
+Custom Fields,0
+Custom Fields Balanced,0
+Subscription List BOW,0
+Subscription List BOW Balanced,0
+Tweets BOW,0
+Tweets BOW Balanced,0
+Tweets Bigram,"('ACCURACY--> Bayes:', 0.63636363636363635, '|RForest:', 0.58874458874458879, '|SVM:', 0.59740259740259738, '|SGD:', 0.60606060606060608, 'F-SCORE--> Bayes:', array([ 0.50526316,  0.7699115 ,  0.45283019,  0.62162162,  0.14285714]), '|RForest:', array([ 0.12698413,  0.76534296,  0.1875    ,  0.5974026 ,  0.        ]), '|SVM:', array([ 0.44036697,  0.71244635,  0.48888889,  0.57627119,  0.375     ]), '|SGD:', array([ 0.47916667,  0.76271186,  0.        ,  0.58426966,  0.15384615]))"
+Tweets Bigram Balanced,0

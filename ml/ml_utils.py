@@ -12,6 +12,11 @@ from sklearn.metrics import confusion_matrix
 import itertools
 import time
 import matplotlib.pyplot as plt
+from sklearn.model_selection import GridSearchCV
+from sklearn.svm import SVC
+from sklearn.linear_model import SGDClassifier
+from sklearn.naive_bayes import MultinomialNB
+
 
 def convertToInt(ageRanges,typeOp):
     db_access = MongoDBUtils()
@@ -91,3 +96,46 @@ def createConfusionMatrix(y_true,y_pred,classes,className,mlAlgorithm,outdir):
     fullname = os.path.join(outdir, outname)
     fig2.savefig(fullname)
 
+#####################################
+##      HYPERPARAMETER TUNING
+#####################################
+
+def SVM_param_selection(X, y): 
+    print "Tuning parameters for SVM..."
+    Cs = [8, 10, 12, 14]
+    gammas = [ 0.01, 0.1 , 1]
+    kernel=['rbf','linear']
+    param_grid = {'C': Cs, 'gamma' : gammas,'kernel':kernel}
+    grid_search = GridSearchCV(SVC(), param_grid, cv=10)
+    grid_search.fit(X, y)
+    grid_search.best_params_
+    print "Finished Tuning parameters for SVM..."
+    return grid_search.best_params_
+
+def RandomForest_param_selection(X, y): 
+    print "Tuning parameters for RandomForest..."
+
+    param_grid = { 
+           "n_estimators" : [120, 140,160, 180],
+           "max_depth" : [20,25, 30, 35 ],
+           "min_samples_leaf" : [1, 2, 3, 4]}
+ 
+    grid_search = GridSearchCV(estimator=RandomForestClassifier(), param_grid=param_grid, cv= 10)
+    grid_search.fit(X, y)
+    grid_search.best_params_
+    print "Finished Tuning parameters for RandomForest..."
+    return grid_search.best_params_
+
+def SGD_param_selection(X,y): 
+    print "Tuning parameters for SGD..."
+    param_grid = {
+        'n_iter': [40, 50, 60],
+        'loss': ('log', 'hinge'),
+        'penalty': ['l1', 'l2', 'elasticnet'],
+        'alpha': [0.001, 0.0001, 0.00001]
+    }
+    grid_search = GridSearchCV(estimator=SGDClassifier(), param_grid=param_grid, cv= 10)
+    grid_search.fit(X, y)
+    grid_search.best_params_
+    print "Finished Tuning parameters for SGD..."
+    return grid_search.best_params_

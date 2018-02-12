@@ -25,19 +25,24 @@ import time
 from nltk.corpus import stopwords
 from tabulate import tabulate
 import matplotlib.pyplot as plt
-from sklearn.svm import LinearSVC
+from sklearn.svm import SVC
 from sklearn.linear_model import SGDClassifier
 from sklearn.metrics import f1_score
 from sklearn.feature_extraction.text import TfidfVectorizer
+from nlp_features.customStopwords import getCustomStopwords
+from sklearn.metrics import classification_report
 
-def main_featBOW(typeOp):
+def main_featBOW(typeOp,balanced):
 	
-	train_data=pd.read_csv(DATASET_PATH+"/"+typeOp+"_tweets_train.csv", sep=",",dtype=str)
-	test_data=pd.read_csv(DATASET_PATH+"/"+typeOp+"_tweets_test.csv", sep=",",dtype=str)
+	if balanced == 'balanced':
+		train_data=pd.read_csv(DATASET_PATH+"/tweets_balanced_train.csv", sep=",",dtype=str)
+		test_data=pd.read_csv(DATASET_PATH+"/tweets_balanced_test.csv", sep=",",dtype=str)
+	else:
+		train_data=pd.read_csv(DATASET_PATH+"/"+typeOp+"_tweets_train.csv", sep=",",dtype=str)
+		test_data=pd.read_csv(DATASET_PATH+"/"+typeOp+"_tweets_test.csv", sep=",",dtype=str)
 
 	##STOPWORDS EN SPANISH, SCIKIT TRAE SOLO EN INGLES
-	foo = imp.load_source('stopwords', DIR_PREFIX+'/proyectos/TesisVT/nlp_features/nlp_utils.py')
-	stopwords = foo.generateCustomStopwords()  
+	stopwords = getCustomStopwords()  
 
 	#count_vect = CountVectorizer(stop_words=stopwords, max_features=5000 ) #Para hacer bag of words
 	#X_train_counts = count_vect.fit_transform(train_data.tweets)
@@ -47,13 +52,9 @@ def main_featBOW(typeOp):
 	transformer_tfidf = TfidfVectorizer(smooth_idf=False,lowercase=False,stop_words=stopwords,max_features=5000)
 	tfidf = transformer_tfidf.fit_transform(train_data.tweets)
 
-	indices = np.argsort(transformer_tfidf.idf_)[::-1]
-	features = transformer_tfidf.get_feature_names()
-	top_n = 500
 	idf = transformer_tfidf.idf_
 
 	valuesTfIdf = sorted(zip(idf,transformer_tfidf.get_feature_names()), key=lambda x: x[0])
-	print valuesTfIdf
 	#print(tabulate(values, headers, tablefmt="plain"))
 
 	## ********* APLICO BAG OF WORDS *********
@@ -78,20 +79,31 @@ def main_featBOW(typeOp):
 	#for tag, count in zip(vocab, dist):
 	#	print count, tag
 
-	# ********* APLICO RANDOM FOREST Y LO ENTRENO CON LA DATA EN TRAIN*********#
 
-	print "Training the random forest..."
+	########################################
+	#******* HYPERPARAMETER TUNING *********
+	########################################
+	
+	import ml_utils as ml_utils
+	#PARAMETERS TUNING
+	#print ml_utils.SVM_param_selection(train_data_features, train_data["age"]) #RESULT: {'kernel': 'rbf', 'C': 10, 'gamma': 0.1} 
+	#print ml_utils.RandomForest_param_selection(train_data_features, train_data["age"])#RESULT: {'n_estimators': 160, 'max_depth': 20, 'min_samples_leaf': 3}
+	#print ml_utils.SGD_param_selection(train_data_features, train_data["age"]) #RESULT: {'penalty': 'elasticnet', 'alpha': 0.0001, 'n_iter': 50, 'loss': 'log'}
+	
+	# ********* ENTRENO LOS MODELOS CON LA DATA EN TRAIN*********#
+
+	print "Training the model..."
 
 	# Initialize Multinomial Naive Bayes
 	bayes = MultinomialNB()
 
 	# Initialize a Random Forest classifier with 100 trees
-	forest = RandomForestClassifier(n_estimators = 100) 
+	forest = RandomForestClassifier(n_estimators = 160, max_depth=20,min_samples_leaf=3) 
 	# Fit the forest to the training set, using the bag of)
 
-	svm = LinearSVC(loss='hinge', penalty='l2', random_state=42)
-	
-	sgd = SGDClassifier(loss='hinge', penalty='l2', random_state=42, alpha=0.001)
+	svm = SVC(kernel='rbf', C=10, gamma= 0.1)
+
+	sgd = SGDClassifier(loss='log', penalty='l2', random_state=42, alpha=0.0001,n_iter=60)
 
 	# Fit the forest to the training set, using the bag of words as 
 	# features and the age range as the response variable
@@ -153,17 +165,16 @@ def main_featBOW(typeOp):
 	df_tfidf.to_csv(fullname,index=False)
 
 	# View a list of the features and their importance scores
-	#print "Importance of Features: ", sort(zip(train_data_features, forest.feature_importances_))
+	print "Importance of Features: "#, sort(zip(train_data_features, forest.feature_importances_))
 
-	#headers = ["name", "score"]
-	#values = sorted(zip(vocab, forest.feature_importances_), key=lambda x: x[1] * -1)
-	#print(tabulate(values, headers, tablefmt="plain"))
+	headers = ["name", "score"]
+	values = sorted(zip(vocab, forest.feature_importances_), key=lambda x: x[1] * -1)
+	print(tabulate(values[:100], headers, tablefmt="plain"))
 
 	###################################
 	#******* MODEL EVALUATION *********
 	###################################
 
-	import ml_utils as ml_utils
 	db_access = MongoDBUtils()
 	
 	ageRanges=[]
@@ -207,5 +218,6 @@ def main_featBOW(typeOp):
 
 if __name__ == '__main__':
     main_featBOW()
+
 
 

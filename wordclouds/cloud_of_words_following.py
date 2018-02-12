@@ -18,6 +18,7 @@ import nltk
 import HTMLParser
 from nltk.corpus import stopwords
 from nltk.tokenize import sent_tokenize, word_tokenize
+from nlp_features.customStopwords import getSpanishStopwords
 
 # Simple WordCloud
 from os import path
@@ -31,15 +32,20 @@ def main_wordcloudsFollowing():
 	##WORDCLOUD FOR EVERY AGE RANGE
 	db_access = MongoDBUtils()
 	ageRanges = db_access.getAgeRanges()
-	#ageRanges=['18-24']
-	htmlParser= HTMLParser.HTMLParser()
+	stopwords = getSpanishStopwords()  
 
 	for ar in ageRanges:
-
 		#Decode data
-		result = db_access.get_SubscriptionListsFromAgeRange(ar)
+		df_subscription=pd.read_csv(DATASET_PATH+"/subscriptionLists_"+ar+".csv", sep=",",dtype=str)
+
+		text = ' '.join(df_subscription['subscriptionLists'])
+
+		for stop in stopwords:
+			stop=' '+stop.encode('utf-8')+ ' '
+			text = text.replace(stop,' ').encode('utf-8','ignore')
 		
-		wordcloud = WordCloud(width=1600, height=800).generate(result)
+		wordcloud = WordCloud(width=1600, height=800).generate(text.decode("utf-8"))
+		print "Dibujando wordcloud para ", ar, " ..."
 		# Open a plot of the generated image.
 		plt.figure( figsize=(20,10), facecolor='k')
 		plt.title('wordcloud subscription lists:'+ ar)

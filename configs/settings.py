@@ -8,6 +8,8 @@ from enum import Enum
 DIR_PREFIX="/Users/verouy" #MAC
 #DIR_PREFIX="/home/vero" #LINUX
 DATASET_PATH="/Users/verouy/proyectos/TesisVT/datasets"
+ML_PATH="/Users/verouy/proyectos/TesisVT/ml"
+NLP_PATH="/Users/verouy/proyectos/TesisVT/nlp_features"
 
 ############################
 # LOGGER

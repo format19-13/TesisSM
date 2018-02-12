@@ -15,10 +15,10 @@ from sklearn.ensemble import RandomForestClassifier
 import string
 import re
 import nltk
-import HTMLParser
 from nltk.corpus import stopwords
 from nltk.tokenize import sent_tokenize, word_tokenize
 import imp
+import sys
 # Simple WordCloud
 from os import path
 from scipy.misc import imread
@@ -26,38 +26,61 @@ import matplotlib.pyplot as plt
 import random
 from nltk.corpus import stopwords
 from wordcloud import WordCloud
+from nlp_features.customStopwords import getCustomStopwords,getSpanishStopwords
+
+def anyPresent(text, stopWords):
+	for word in stopWords:
+		if (' '+word+' ') in text:
+			return True
+
+	return False
+
+def removeStopWords(text, stopwords):
+	originaltext = text
+
+	while anyPresent(text, stopwords):
+		for word in stopwords:
+			text = (str(text)).replace(' ' + str(word) + ' ', ' ')
+
+	return text
 
 def main_wordcloudsTweets():
 	##WORDCLOUD FOR EVERY AGE RANGE
 	db_access = MongoDBUtils()
 	ageRanges = db_access.getAgeRanges()
-	#ageRanges=['18-24']
-	htmlParser= HTMLParser.HTMLParser()
-
-	##STOPWORDS EN SPANISH, SCIKIT TRAE SOLO EN INGLES
-	foo = imp.load_source('stopwords', DIR_PREFIX+'/proyectos/TesisVT/nlp_features/nlp_utils.py')
-	stopwords = foo.generateCustomStopwords()  
+	#ageRanges=['50-64']
+	stopwords = getCustomStopwords()  
+	stopwords.append(u'jajaja')
+	stopwords.append(u'gracia')
+	stopwords.append(u'asi')
+	stopwords.append(u'via')
+	stopwords.append(u'dia')
+	stopwords.append(u'tambien')
+	stopsAux=[]
+	for stop in stopwords:
+		stopsAux.append(stop.encode('utf-8'))
 
 	for ar in ageRanges:
 		print ar
 		#Decode data
-		df_tweets=pd.read_csv(DATASET_PATH+"/tweets_"+ar+".csv", sep=",",dtype=str)
+		df_tweets=pd.read_csv(DATASET_PATH+"/tweets_"+ar+".csv", sep=",")
+		
+		text=''
+		for tw in df_tweets['tweets']:
+			tw=tw.translate(None, string.punctuation)
+			tw=tw.replace('¿', ' ')
+			tw=tw.replace('¡', ' ')
+			tw=tw.replace('á', 'a')
+			tw=tw.replace('é', 'e')
+			tw=tw.replace('í', 'i')
+			tw=tw.replace('ó', 'o')
+			tw=tw.replace('ú', 'u')
+			# Replace all stop words from the tweet
+			text += removeStopWords(tw, stopwords)
+
+		text = removeStopWords(text, stopwords)
 	
-		text = ' '.join(df_tweets['tweets'])
-		punct = string.punctuation.replace("#", "¿¡")
-		result = remove_from_string(text, punct)
-		words=result.split()
-
-	 	textFiltered=u""
-		
-		#stop = set(stopwords.words('spanish'))
-		
-		for w in words:	
-			print w
-			if w not in stopwords:
-				textFiltered=textFiltered +u' '+ unicode(w,"utf-8","ignore")
-
-		wordcloud = WordCloud(width=1600, height=800).generate(textFiltered)
+		wordcloud = WordCloud(width=1600, height=800).generate(text)
 		print "Dibujando wordcloud para ", ar, " ..."
 
 		# Open a plot of the generated image.
@@ -67,46 +90,3 @@ def main_wordcloudsTweets():
 		plt.axis("off")
 		plt.tight_layout(pad=0)
 		plt.savefig('wordcloud_'+ ar +".png", facecolor='k', bbox_inches='tight')
-
-def remove_from_string(string, chars_to_remove):
-	""" Removes all occurances of a the given characters
-	from the string. """
-	result = ""
-	for char in string:
-		if not char in chars_to_remove:
-			result = result + char
-
-	return result 
-
-def generateCustomStopwords():
-
-	stopset = set(nltk.corpus.stopwords.words('spanish'))
-
-	##add domain stopwords
-	stopset.add((u'hoy'))
-	stopset.add((u'más'))
-	stopset.add((u'si'))
-	stopset.add((u'aquí'))
-	stopset.add((u'ahora'))
-	stopset.add((u'está'))
-	stopset.add((u'ser'))
-	stopset.add((u'bien'))
-	stopset.add((u'gracias'))
-	stopset.add((u'qué'))
-	stopset.add((u'día'))
-	stopset.add((u'días'))
-	stopset.add((u'año'))
-	stopset.add((u'años'))
-	stopset.add((u'mejor'))
-	stopset.add((u'puede'))
-	stopset.add((u'hacer'))
-	stopset.add((u'así'))
-	stopset.add((u'hace'))
-	stopset.add((u'ver'))
-	stopset.add((u'cómo'))
-	stopset.add((u'va'))
-	stopset.add((u'españa'))
-	stopset.add((u'vía'))
-	stopset.add((u'gran'))
-	stopset.add((u'nuevo'))
-	return stopset

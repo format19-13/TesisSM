@@ -14,6 +14,7 @@ import logging
 import datetime
 import emoji
 
+
 class MongoDBUtils(object):
 
     def __init__(self):
@@ -74,7 +75,7 @@ class MongoDBUtils(object):
             col = db[collection]
             users=[]
             for user in col.find(no_cursor_timeout=True):
-                if user['age'] in ['25-34','35-49','50-64','65-xx']:
+                if user['age'] in ['25-34','35-49','50-xx']:
                     user['age']='25-xx'
                     users.append(user)
             return users
@@ -152,7 +153,7 @@ class MongoDBUtils(object):
                 tweetText=""
                 age=user['age']
                 if typeOp == 'pedophilia':
-                    if user['age'] in ['25-34','35-49','50-64','65-xx']:
+                    if user['age'] in ['25-34','35-49','50-xx']:
                         age='25-xx'
 
                 for tweet in  user['tweets']:
@@ -246,7 +247,7 @@ class MongoDBUtils(object):
         for user in col.find(): #para cada usuario
             age=user['age']
             if typeOp == 'pedophilia':
-                if user['age'] in ['25-34','35-49','50-64','65-xx']:
+                if user['age'] in ['25-34','35-49','50-xx']:
                     age='25-xx'
 
             subsLists=""
@@ -347,7 +348,7 @@ class MongoDBUtils(object):
                     gender=2
 
                 if typeOp == 'pedophilia':
-                    if user['age'] in ['25-34','35-49','50-64','65-xx']:
+                    if user['age'] in ['25-34','35-49','50-xx']:
                         age='25-xx'
 
                 df.loc[count] = [user['screen_name'],user['friends_count'],user['statuses_count'],user['linkedin'],user['snapchat'],user['instagram'],user['facebook'],user['followers_count'],user['favourites_count'], user['qtyMentions'],user['qtyHashtags'],user['qtyUrls'], user['qtyEmojis'], gender,age ]
@@ -421,10 +422,8 @@ class MongoDBUtils(object):
                                 ageRange = '25-34'
                             elif 35 <= age <= 49:
                                 ageRange = '35-49'
-                            elif 50 <= age <= 64:
-                                ageRange = '50-64'
-                            elif 65 <= age <= 99: 
-                                ageRange = '65-xx'
+                            elif 50 <= age <= 99:
+                                ageRange = '50-xx'
                                
                             print "guardando...",screen_name
                             df.loc[count] = [screen_name,ageRange]
@@ -619,15 +618,10 @@ class MongoDBUtils(object):
                 tweetText=""
                 age=user['age']
                 if typeOp == 'pedophilia':
-                    if user['age'] in ['25-34','35-49','50-64','65-xx']:
+                    if user['age'] in ['25-34','35-49','50-xx']:
                         age='25-xx'
 
                 for tweet in  user['tweets']:
-                ##https://www.analyticsvidhya.com/blog/2015/06/quick-guide-text-data-cleaning-python/
-                ##TWEETS CLEANUP
-                #https://github.com/myleott/ark-twokenize-py
-                #Decode data
-
                     cleanedTweet= re.sub(r"http\S+", "",tweet['full_text'])
                     cleanedTweet=re.sub(r'@\w+',"", cleanedTweet).lower().replace("\n","").replace("\r","")
 
@@ -662,14 +656,13 @@ class MongoDBUtils(object):
             # Obtiene el ObjectID Mongo del perfil del data source para el usuario
             col = db[DB_COL_USERS]
             count=0
-            for user in col.find(): #para cada usuario
-                tweetText=""
+            for user in col.find({"listsSubscriptions":{"$nin":[[],-1]}}): #para cada usuario
                 age=user['age']
+                subsLists=""
                 if typeOp == 'pedophilia':
-                    if user['age'] in ['25-34','35-49','50-64','65-xx']:
+                    if user['age'] in ['25-34','35-49','50-xx']:
                         age='25-xx'
 
-                subsLists=""
                 try:
                     if user['listsSubscriptions'] != -1 and len(user['listsSubscriptions']) >0:
                         for lstSub in user['listsSubscriptions']:
@@ -681,14 +674,12 @@ class MongoDBUtils(object):
                             else:
                                 subsLists= subsLists +'. '+ subscr
 
-                    if subsLists != "":
                         df.loc[count] = [user['screen_name'],subsLists,age]
                         count += 1
 
                 except Exception as e:
                     print user['screen_name']
                     print e
-
 
             # Split into training and test set
             # 80% of the input for training and 20% for testing
@@ -707,28 +698,107 @@ class MongoDBUtils(object):
         except PyMongoError as e:
             self.logger.error('Error while trying to save user account', exc_info=True)
 
+    def export_subscriptionLists_toCSV_balanced(self):
+        print "Exporting Subscription Lists Balanced ..."
+        
+        ageRanges = self.getAgeRanges()
+
+        try:
+            df = DataFrame(columns=('screen_name', 'subscriptionLists', 'age'))
+            # Obtiene una referencia a la instancia de la DB
+            db = self.mongo_client[MONGO_DB_NAME]
+            # Obtiene el ObjectID Mongo del perfil del data source para el usuario
+            col = db[DB_COL_USERS]
+            count=0
+            for ageR in ageRanges:
+                for user in col.find({"listsSubscriptions":{"$nin":[[],-1]},"age":ageR}).limit(11):
+                    age=user['age']
+                    subsLists=""
+                    try:
+                        if user['listsSubscriptions'] != -1 and len(user['listsSubscriptions']) >0:
+
+                            for lstSub in user['listsSubscriptions']:
+
+                                subscr=lstSub['name'].encode('utf-8')                     
+                                subscr=subscr.lower().replace("\n","").replace("\r","")
+
+                                if subsLists =="":
+                                    subsLists= subscr
+                                else:
+                                    subsLists= subsLists +'. '+ subscr
+
+                            df.loc[count] = [user['screen_name'],subsLists,age]
+                            count += 1
+                        else:
+                            print user["screen_name"],user['listsSubscriptions']
+                    except Exception as e:
+                        print user['screen_name']
+                        print e
+
+
+            # Split into training and test set
+            # 80% of the input for training and 20% for testing
+            train_data=df.sample(frac=0.8,random_state=200) 
+            test_data=df.drop(train_data.index)
+
+            print train_data.shape
+            print test_data.shape
+            
+            df.to_csv("subscriptionLists_COMPLETE_balanced.csv",index=False)
+            train_data.to_csv("subscriptionLists_balanced_train.csv",index=False)
+            test_data.to_csv("subscriptionLists_balanced_test.csv",index=False)
+
+        except Exception as e:
+            print e
+
+
     def export_customFields(self,typeOp):
         print "Exporting Custom Fields ..."
         try:
-            df = DataFrame(columns=('screen_name', 'friends_count',  'tweets_count', 'linkedin', 'snapchat', 'instagram','facebook','followers_count','favourites_count','qtyMentions','qtyHashtags','qtyUrls', 'qtyEmojis', 'profile_pic_gender','age'))
+            df = DataFrame(columns=('screen_name', 'friends_count',  'tweets_count', 'linkedin', 'snapchat', 'instagram','facebook','followers_count','favourites_count','qtyMentions','qtyHashtags','qtyUrls', 'qtyEmojis', 'qtyUppercase','profile_pic_gender','age'))
             # Obtiene una referencia a la instancia de la DB
             db = self.mongo_client[MONGO_DB_NAME]
             # Obtiene el ObjectID Mongo del perfil del data source para el usuario
             col = db[DB_COL_USERS]
             count=0
             for user in col.find(): #para cada usuario
-                gender=0
                 age=user['age']
+
+                gender=0
                 if user['profile_pic_gender'] == 'male' :
                     gender=1
                 elif user['profile_pic_gender'] == 'female' :
                     gender=2
+                
+                snapchat=0
+                if user['snapchat'] == 'True' :
+                    snapchat=1
+                elif user['snapchat'] == 'False' :
+                    snapchat=0
+
+                instagram=0
+                if user['instagram'] == 'True' :
+                    instagram=1
+                elif user['instagram'] == 'False' :
+                    instagram=0
+
+                facebook=0
+                if user['facebook'] == 'True' :
+                    facebook=1
+                elif user['facebook'] == 'False' :
+                    facebook=0
+
+                linkedin=0
+                if user['linkedin'] == 'True' :
+                    linkedin=1
+                elif user['linkedin'] == 'False' :
+                    linkedin=0
 
                 if typeOp == 'pedophilia':
-                    if user['age'] in ['25-34','35-49','50-64','65-xx']:
+                    if user['age'] in ['25-34','35-49','50-xx']:
                         age='25-xx'
 
-                df.loc[count] = [user['screen_name'],user['friends_count'],user['statuses_count'],user['linkedin'],user['snapchat'],user['instagram'],user['facebook'],user['followers_count'],user['favourites_count'], user['qtyMentions'],user['qtyHashtags'],user['qtyUrls'], user['qtyEmojis'], gender,age ]
+                df.loc[count] = [user['screen_name'],user['friends_count'],user['statuses_count'],linkedin,snapchat,instagram,facebook,user['followers_count'],user['favourites_count'], user['qtyMentions'],user['qtyHashtags'],user['qtyUrls'], user['qtyEmojis'], user['qtyUppercase'],gender,age ]
                 count += 1
             
             # Split into training and test set
@@ -744,6 +814,71 @@ class MongoDBUtils(object):
             self.logger.error('Mongo connection error', exc_info=True)
         except PyMongoError as e:
             self.logger.error('Error while trying to save user account', exc_info=True)
+
+    def export_customFields_balanced(self):
+        print "Exporting Custom Fields Balanced..."
+        
+        ageRanges = self.getAgeRanges()
+
+        try:
+            df = DataFrame(columns=('screen_name', 'friends_count',  'tweets_count', 'linkedin', 'snapchat', 'instagram','facebook','followers_count','favourites_count','qtyMentions','qtyHashtags','qtyUrls', 'qtyEmojis', 'qtyUppercase','profile_pic_gender','age'))
+            # Obtiene una referencia a la instancia de la DB
+            db = self.mongo_client[MONGO_DB_NAME]
+            # Obtiene el ObjectID Mongo del perfil del data source para el usuario
+            col = db[DB_COL_USERS]
+            count=0
+
+            for ageR in ageRanges:
+                for user in col.find({"age":ageR}).limit(51) :
+                    age=user['age']
+
+                    gender=0
+                    if user['profile_pic_gender'] == 'male' :
+                        gender=1
+                    elif user['profile_pic_gender'] == 'female' :
+                        gender=2
+                    
+                    snapchat=0
+                    if user['snapchat'] == 'True' :
+                        snapchat=1
+                    elif user['snapchat'] == 'False' :
+                        snapchat=0
+
+                    instagram=0
+                    if user['instagram'] == 'True' :
+                        instagram=1
+                    elif user['instagram'] == 'False' :
+                        instagram=0
+
+                    facebook=0
+                    if user['facebook'] == 'True' :
+                        facebook=1
+                    elif user['facebook'] == 'False' :
+                        facebook=0
+
+                    linkedin=0
+                    if user['linkedin'] == 'True' :
+                        linkedin=1
+                    elif user['linkedin'] == 'False' :
+                        linkedin=0
+
+                    df.loc[count] = [user['screen_name'],user['friends_count'],user['statuses_count'],linkedin,snapchat,instagram,facebook,user['followers_count'],user['favourites_count'], user['qtyMentions'],user['qtyHashtags'],user['qtyUrls'], user['qtyEmojis'], user['qtyUppercase'],gender,age ]
+                    count += 1
+            
+            # Split into training and test set
+            # 80% of the input for training and 20% for testing
+            train_data=df.sample(frac=0.8,random_state=200) 
+            test_data=df.drop(train_data.index)
+            
+            df.to_csv("customFields_COMPLETE_balanced.csv",index=False)
+            train_data.to_csv("customFields_balanced_train.csv",index=False)
+            test_data.to_csv("customFields_balanced_test.csv",index=False)
+
+        except ConnectionFailure as e:
+            self.logger.error('Mongo connection error', exc_info=True)
+        except PyMongoError as e:
+            self.logger.error('Error while trying to save user account', exc_info=True)
+
 
     def export_tweetsTextFromAgeRange(self, ageRange):
         print "Exporting Tweets of age: ", ageRange, " ..."
@@ -766,7 +901,7 @@ class MongoDBUtils(object):
                     if tweetText =="":
                         tweetText= cleanedTweet.encode('utf-8')
                     else:
-                        tweetText= tweetText +' '+ cleanedTweet.encode('utf-8')
+                        tweetText= tweetText +'. '+ cleanedTweet.encode('utf-8')
 
                 df.loc[count] = [user['screen_name'],tweetText,age]
                 count += 1
@@ -776,3 +911,75 @@ class MongoDBUtils(object):
         except Exception as e:
             print e
 
+    def export_tweetsText_toCSV_balanced(self):
+        print "Exporting Tweets BALANCED ..."
+        ageRanges = self.getAgeRanges()
+
+        try:
+            df = DataFrame(columns=('screen_name', 'tweets', 'age'))
+            # Obtiene una referencia a la instancia de la DB
+            db = self.mongo_client[MONGO_DB_NAME]
+            # Obtiene el ObjectID Mongo del perfil del data source para el usuario
+            col = db[DB_COL_USERS]
+            count=0
+
+            for ageR in ageRanges:
+                for user in col.find({"age":ageR}).limit(51) :
+                    tweetText=""
+                    age=user['age']
+
+                    for tweet in  user['tweets']:
+                        cleanedTweet= re.sub(r"http\S+", "",tweet['full_text'])
+                        cleanedTweet=re.sub(r'@\w+',"", cleanedTweet).lower().replace("\n","").replace("\r","")
+
+                        if tweetText =="":
+                            tweetText= cleanedTweet.encode('utf-8')
+                        else:
+                            tweetText= tweetText +'. '+ cleanedTweet.encode('utf-8')
+
+                    df.loc[count] = [user['screen_name'],tweetText,age]
+                    count += 1
+            
+            # Split into training and test set
+            # 80% of the input for training and 20% for testing
+            train_data=df.sample(frac=0.8,random_state=200) 
+            test_data=df.drop(train_data.index)
+            
+            df.to_csv("tweets_COMPLETE_balanced.csv",index=False)
+            train_data.to_csv("tweets_balanced_train.csv",index=False)
+            test_data.to_csv("tweets_balanced_test.csv",index=False)
+
+        except Exception as e:
+            print e
+
+    def export_subscriptionListsFromAgeRange(self, ageRange):
+        print "Exporting Subscription Lists of age: ", ageRange, " ..."
+
+        try:
+            df = DataFrame(columns=('screen_name', 'subscriptionLists', 'age'))
+            # Obtiene una referencia a la instancia de la DB
+            db = self.mongo_client[MONGO_DB_NAME]
+            # Obtiene el ObjectID Mongo del perfil del data source para el usuario
+            col = db[DB_COL_USERS]
+            count=0
+            for user in col.find({"age":ageRange}) :
+                age=user['age']
+                subsLists=""
+                try:
+                    if user['listsSubscriptions'] != -1 and len(user['listsSubscriptions']) >0:
+                        for lstSub in user['listsSubscriptions']:
+                            if subsLists =="":
+                                subsLists= lstSub['name']
+                            else:
+                                subsLists= subsLists +'. '+ lstSub['name']
+
+                        df.loc[count] = [user['screen_name'],subsLists,age]
+                        count += 1
+                except Exception as e:
+                    print user['screen_name']
+                    print e
+        
+            df.to_csv("subscriptionLists_"+ageRange+".csv",index=False)
+
+        except Exception as e:
+            print e

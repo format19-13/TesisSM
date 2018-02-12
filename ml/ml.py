@@ -51,24 +51,27 @@ def runMLAlgorithms(typeOp):
 	print "Ejecutando ml para custom fields"
 	print "#################################"
 
-	accCustomFields = 0#main_customFields(typeOp)
+	accCustomFields = 0#main_customFields(typeOp,'unbalanced')
+	accCustomFieldsBalanced = 0#main_customFields(typeOp,'balanced')
 
 	print "################################################################"
 	print "Ejecutando ml para subscriptionsBOW sobre listas de suscripcion"
 	print "################################################################"
-	accSubs = 0#main_subscriptionBOW(typeOp)
-
+	accSubs = main_subscriptionBOW(typeOp,'unbalanced')
+	accSubsBalanced = 0#main_subscriptionBOW(typeOp,'balanced')
 	#comparar resultados/accuracy contra profile pic
 
 	print "########################################"
 	print "Ejecutando ml para featBOW sobre tweets"
 	print "########################################"
-	accFeatBOW = main_featBOW(typeOp)
+	accFeatBOW = 0#main_featBOW(typeOp,'unbalanced')
+	accFeatBOWBalanced = 0#main_featBOW(typeOp,'balanced')
 
 	print "###########################################"
 	print "Ejecutando ml para featBigram sobre tweets"
 	print "###########################################"
-	accFeatBigram = main_featBigram(typeOp)
+	accFeatBigram = 0#main_featBigram(typeOp,'unbalanced')
+	accFeatBigramBalanced = 0#main_featBigram(typeOp,'balanced')
 
 	print "###########################################"
 	print "        ACCURACY DE CADA METODO: "
@@ -82,7 +85,7 @@ def runMLAlgorithms(typeOp):
 	print '--------------------------------'
 	print "Tweets Bigram: ",  accFeatBigram
 
-	df = pd.DataFrame([["Custom Fields", accCustomFields], ["Subscription List BOW", accSubs],["Tweets BOW", accFeatBOW], ["Tweets Bigram", accFeatBigram]], columns=['Method','Accuracy'])
+	df = pd.DataFrame([["Custom Fields", accCustomFields], ["Custom Fields Balanced", accCustomFieldsBalanced], ["Subscription List BOW", accSubs],["Subscription List BOW Balanced", accSubsBalanced],["Tweets BOW", accFeatBOW],["Tweets BOW Balanced", accFeatBOWBalanced], ["Tweets Bigram", accFeatBigram],["Tweets Bigram Balanced", accFeatBigramBalanced]], columns=['Method','Accuracy'])
 
 	outdir =time.strftime("%d-%m-%Y")+"/"+typeOp
 	outname = 'accuracy_'+typeOp+'.csv'
@@ -92,7 +95,7 @@ def runMLAlgorithms(typeOp):
 	df.to_csv(fullname,index=False)
 
 runMLAlgorithms('normal')
-runMLAlgorithms('pedophilia')
+#runMLAlgorithms('pedophilia')
 
 
 

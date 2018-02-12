@@ -27,17 +27,21 @@ import matplotlib.pyplot as plt
 from sklearn.svm import LinearSVC
 from sklearn.linear_model import SGDClassifier
 from sklearn.metrics import f1_score
+from nlp_features.customStopwords import getSpanishStopwords
 
-def main_subscriptionBOW(typeOp):
-
-	train_data=pd.read_csv(DATASET_PATH+"/"+typeOp+"_subscriptionLists_train.csv", sep=",",dtype=str)
-	test_data=pd.read_csv(DATASET_PATH+"/"+typeOp+"_subscriptionLists_test.csv", sep=",",dtype=str)
+def main_subscriptionBOW(typeOp,balanced):
+	
+	if balanced == 'balanced':
+		train_data=pd.read_csv(DATASET_PATH+"/subscriptionLists_balanced_train.csv", sep=",",dtype=str)
+		test_data=pd.read_csv(DATASET_PATH+"/subscriptionLists_balanced_train.csv", sep=",",dtype=str)
+	else:
+		train_data=pd.read_csv(DATASET_PATH+"/"+typeOp+"_subscriptionLists_train.csv", sep=",",dtype=str)
+		test_data=pd.read_csv(DATASET_PATH+"/"+typeOp+"_subscriptionLists_test.csv", sep=",",dtype=str)
 
 	print train_data.shape
 	print test_data.shape
-	##STOPWORDS EN SPANISH, SCIKIT TRAE SOLO EN INGLES
-	foo = imp.load_source('stopwords', DIR_PREFIX+'/proyectos/TesisVT/nlp_features/nlp_utils.py')
-	stopwords = foo.generateCustomStopwords()  
+
+	stopwords = getSpanishStopwords()  
 
 	count_vect = CountVectorizer(stop_words=stopwords, max_features=5000,ngram_range=(1,3), token_pattern=r'\b\w+\b' ) #Para hacer bag of words
 	X_train_counts = count_vect.fit_transform(train_data.subscriptionLists)
@@ -66,9 +70,20 @@ def main_subscriptionBOW(typeOp):
 	#for tag, count in zip(vocab, dist):
 	#	print count, tag
 
-	# ********* APLICO RANDOM FOREST Y LO ENTRENO CON LA DATA EN TRAIN*********#
+	########################################
+	#******* HYPERPARAMETER TUNING *********
+	########################################
+	
+	import ml_utils as ml_utils
+	#PARAMETERS TUNING
+	#print ml_utils.SVM_param_selection(train_data_features, train_data["age"]) #RESULT:{'kernel': 'rbf', 'C': 10, 'gamma': 0.01}
+	#print ml_utils.RandomForest_param_selection(train_data_features, train_data["age"])#RESULT: 
+	print ml_utils.SGD_param_selection(train_data_features, train_data["age"]) #RESULT: 
+	
 
-	print "Training the random forest..."
+	# ********* APLICO MODELOS Y LOS ENTRENO CON LA DATA EN TRAIN*********#
+
+	print "Training the models..."
 
 	# Initialize Multinomial Naive Bayes
 	bayes = MultinomialNB()
@@ -77,7 +92,7 @@ def main_subscriptionBOW(typeOp):
 	forest = RandomForestClassifier(n_estimators = 100) 
 	# Fit the forest to the training set, using the bag of)
 
-	svm = LinearSVC(loss='hinge', penalty='l2', random_state=42)
+	svm = SVC(kernel='rbf', C= 10, gamma= 0.01)
 	
 	sgd = SGDClassifier(loss='hinge', penalty='l2', random_state=42, alpha=0.001)
 
@@ -138,7 +153,7 @@ def main_subscriptionBOW(typeOp):
 
 	headers = ["name", "score"]
 	values = sorted(zip(vocab, forest.feature_importances_), key=lambda x: x[1] * -1)
-	print(tabulate(values, headers, tablefmt="plain"))
+	print(tabulate(values[:100], headers, tablefmt="plain"))
 
 	###################################
 	#******* MODEL EVALUATION *********

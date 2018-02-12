@@ -28,7 +28,7 @@ def analyzeProfilePicture():
 def getAgeGenderFromProfilePicture(screen_name,image):
 	db_access = MongoDBUtils()
 	users = db_access.get_users('users')
-	KEY = '568aebd6112041fb8055d8e583f78f94'  # Replace with a valid subscription key (keeping the quotes in place).
+	KEY = '80420a0d0de14f4d9fa2f1c6027afc38'  # Replace with a valid subscription key (keeping the quotes in place).
 	CF.Key.set(KEY)
 	#KEY: https://azure.microsoft.com/en-us/try/cognitive-services/?apiSlug=face-api&country=Uruguay&allowContact=true
 	#TEST ONLINE: https://westcentralus.dev.cognitive.microsoft.com/docs/services/563879b61984550e40cbbe8d/operations/563879b61984550f30395236/console

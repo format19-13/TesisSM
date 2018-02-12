@@ -14,7 +14,6 @@ from sklearn.model_selection import cross_val_score
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import confusion_matrix
-from sklearn.neural_network import MLPClassifier
 from sklearn.metrics import classification_report
 from sklearn.naive_bayes import MultinomialNB
 from stop_words import get_stop_words
@@ -29,12 +28,16 @@ from sklearn.svm import LinearSVC
 from sklearn.linear_model import SGDClassifier
 from sklearn.metrics import f1_score
 
-def main_featBigram(typeOp):
+def main_featBigram(typeOp,balanced):
+	
+	if balanced == 'balanced':
+		train_data=pd.read_csv(DATASET_PATH+"/tweets_balanced_train.csv", sep=",",dtype=str)
+		test_data=pd.read_csv(DATASET_PATH+"/tweets_balanced_test.csv", sep=",",dtype=str)
+	else:
+		train_data=pd.read_csv(DATASET_PATH+"/"+typeOp+"_tweets_train.csv", sep=",",dtype=str)
+		test_data=pd.read_csv(DATASET_PATH+"/"+typeOp+"_tweets_test.csv", sep=",",dtype=str)
 
-	train_data=pd.read_csv(DATASET_PATH+"/"+typeOp+"_tweets_train.csv", sep=",",dtype=str)
-	test_data=pd.read_csv(DATASET_PATH+"/"+typeOp+"_tweets_test.csv", sep=",",dtype=str)
-
-	bigram_vectorizer = CountVectorizer(ngram_range=(1,3), token_pattern=r'\b\w+\b', min_df=1,strip_accents='unicode',max_features=5000) 
+	bigram_vectorizer = CountVectorizer(ngram_range=(2,3), token_pattern=r'\b\w+\b', min_df=1,strip_accents='unicode',max_features=5000) 
 
 	X_train_counts = bigram_vectorizer.fit_transform(train_data.tweets)
 	# fit_transform() fits the model and learns the vocabulary; second, it transforms our training data
@@ -62,20 +65,31 @@ def main_featBigram(typeOp):
 	#for tag, count in zip(vocab, dist):
 	#	print count, tag
 
+	########################################
+	#******* HYPERPARAMETER TUNING *********
+	########################################
+	
+	import ml_utils as ml_utils
+	#PARAMETERS TUNING
+	#print ml_utils.SVM_param_selection(train_data_features, train_data["age"]) #RESULT: {'kernel': 'linear', 'C': 8, 'gamma': 0.01}
+	#print ml_utils.RandomForest_param_selection(train_data_features, train_data["age"])#RESULT:{'n_estimators': 180, 'max_depth': 20, 'min_samples_leaf': 3}
+	#print ml_utils.SGD_param_selection(train_data_features, train_data["age"]) #RESULT:{'penalty': 'l2', 'alpha': 1e-05, 'n_iter': 40, 'loss': 'log'}
+
+
 	# ********* APLICO RANDOM FOREST Y LO ENTRENO CON LA DATA EN TRAIN*********#
 
-	print "Training the random forest..."
+	print "Training the models..."
 
 	# Initialize Multinomial Naive Bayes
 	bayes = MultinomialNB()
 
 	# Initialize a Random Forest classifier with 100 trees
-	forest = RandomForestClassifier(n_estimators = 100) 
+	forest = RandomForestClassifier(n_estimators = 180, max_depth= 20, min_samples_leaf= 3) 
 	# Fit the forest to the training set, using the bag of)
 
-	svm = LinearSVC(loss='hinge', penalty='l2', random_state=42)
-	
-	sgd = SGDClassifier(loss='hinge', penalty='l2', random_state=42, alpha=0.001)
+	svm = SVC(kernel='linear', C= 8, gamma =  0.01)
+
+	sgd = SGDClassifier(loss='log', penalty='l2', alpha=1e-05,n_iter=40)
 
 	# Fit the forest to the training set, using the bag of words as 
 	# features and the age range as the response variable
@@ -103,12 +117,6 @@ def main_featBigram(typeOp):
 
 	resultSGD= sgd.predict(test_data_features)
 
-	clfMLP = MLPClassifier(hidden_layer_sizes=(100,100,100), max_iter=10000, alpha=0.0001,
-                     solver='sgd', verbose=10,  random_state=21,tol=0.000000001)
-
-	#clfMLP.fit(train_data_features, train_data["age"])
-	#predsMLP = clfMLP.predict(test_data_features)
-
 	outdir =time.strftime("%d-%m-%Y")
 	
 	if not os.path.exists(outdir):
@@ -131,11 +139,11 @@ def main_featBigram(typeOp):
 	output.to_csv(fullname,index=False)
 
 	# View a list of the features and their importance scores
-	#print "Importance of Features: ", sort(zip(train_data_features, forest.feature_importances_))
+	print "Importance of Features: "#, sort(zip(train_data_features, forest.feature_importances_))
 
 	headers = ["name", "score"]
 	values = sorted(zip(vocab, forest.feature_importances_), key=lambda x: x[1] * -1)
-	print(tabulate(values, headers, tablefmt="plain"))
+	print(tabulate(values[:100], headers, tablefmt="plain"))
 
 	###################################
 	#******* MODEL EVALUATION *********
@@ -162,25 +170,20 @@ def main_featBigram(typeOp):
 	##SGD
 	ml_utils.createConfusionMatrix(test_data['age'].tolist(),resultSGD,ageRanges,'featBigram','SGD',outdir)
 	
-	##NEURAL NETWORK
-	#ml_utils.createConfusionMatrix(test_data['age'].tolist(),resultMLP,ageRanges,'featBOW','NeuralNetwork')
-	
 	accuracyRF = accuracy_score(test_data['age'].tolist(), resultForest)
 	accuracyNB = accuracy_score(test_data['age'].tolist(), resultBayes)
-	#accuracyMLP = accuracy_score(test_data['age'].tolist(), predsMLP)
 	accuracySVM = accuracy_score(test_data['age'].tolist(), resultSVM)
 	accuracySGD = accuracy_score(test_data['age'].tolist(), resultSGD)
 
 	fscoreRF = f1_score(test_data['age'].tolist(), resultForest, average=None, labels=ageRanges)
 	fscoreNB = f1_score(test_data['age'].tolist(), resultBayes, average=None, labels=ageRanges)
-	#fscoreMLP = f1_score(test_data['age'].tolist(), predsMLP, average=None, labels=ageRanges)
 	fscoreSVM = f1_score(test_data['age'].tolist(), resultSVM, average=None, labels=ageRanges)
 	fscoreSGD = f1_score(test_data['age'].tolist(), resultSGD, average=None, labels=ageRanges)
 
-	print "ACCURACY--> Bayes:",accuracyNB,"|RForest:", accuracyRF,"|SVM:", accuracySVM,"|SGD:", accuracySGD#,"|NeuralN:", accuracyMLP
-	print "F-SCORE--> Bayes:",fscoreNB,"|RForest:", fscoreRF,"|SVM:", fscoreSVM,"|SGD:", fscoreSGD#,"|NeuralN:", fscoreMLP
+	print "ACCURACY--> Bayes:",accuracyNB,"|RForest:", accuracyRF,"|SVM:", accuracySVM,"|SGD:", accuracySGD
+	print "F-SCORE--> Bayes:",fscoreNB,"|RForest:", fscoreRF,"|SVM:", fscoreSVM,"|SGD:", fscoreSGD
 	
-	return "ACCURACY--> Bayes:",accuracyNB,"|RForest:", accuracyRF,"|SVM:", accuracySVM,"|SGD:", accuracySGD,"F-SCORE--> Bayes:",fscoreNB,"|RForest:", fscoreRF,"|SVM:", fscoreSVM,"|SGD:", fscoreSGD#,"|NeuralN:", fscoreMLP#,"|NeuralN:", accuracyMLP
+	return "ACCURACY--> Bayes:",accuracyNB,"|RForest:", accuracyRF,"|SVM:", accuracySVM,"|SGD:", accuracySGD,"F-SCORE--> Bayes:",fscoreNB,"|RForest:", fscoreRF,"|SVM:", fscoreSVM,"|SGD:", fscoreSGD
 
 if __name__ == '__main__':
     main_featBigram()
