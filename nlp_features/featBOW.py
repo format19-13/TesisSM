@@ -13,7 +13,6 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn import svm, datasets
 from sklearn.model_selection import cross_val_score
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.neural_network import MLPClassifier
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import confusion_matrix
 from sklearn.metrics import classification_report
@@ -131,15 +130,6 @@ def main_featBOW(typeOp,balanced):
 
 	resultSGD= sgd.predict(test_data_features)
 
-	#clfMLP = MLPClassifier(hidden_layer_sizes=(100,100,100), max_iter=10000, alpha=0.0001,
-    #                 solver='sgd', verbose=10,  random_state=21,tol=0.000000001)
-
-	#clfMLP.fit(train_data_features, train_data["age"])
-	#resultMLP = clfMLP.predict(test_data_features)
-
-	# Copy the results to a pandas dataframe with an "id" column and
-	# a "age" column
-
 	outdir =time.strftime("%d-%m-%Y")
 	
 	if not os.path.exists(outdir):
@@ -194,27 +184,21 @@ def main_featBOW(typeOp,balanced):
 	
 	##SGD
 	ml_utils.createConfusionMatrix(test_data['age'].tolist(),resultSGD,ageRanges,'featBOW','SGD',outdir)
-	
-	##NEURAL NETWORK
-	#ml_utils.createConfusionMatrix(test_data['age'].tolist(),resultMLP,ageRanges,'featBOW','NeuralNetwork')
-	
 
 	accuracyRF = accuracy_score(test_data['age'].tolist(), resultForest)
 	accuracyNB = accuracy_score(test_data['age'].tolist(), resultBayes)
-	#accuracyMLP = accuracy_score(test_data['age'].tolist(), predsMLP)
 	accuracySVM = accuracy_score(test_data['age'].tolist(), resultSVM)
 	accuracySGD = accuracy_score(test_data['age'].tolist(), resultSGD)
 
 	fscoreRF = f1_score(test_data['age'].tolist(), resultForest, average=None, labels=ageRanges)
 	fscoreNB = f1_score(test_data['age'].tolist(), resultBayes, average=None, labels=ageRanges)
-	#fscoreMLP = f1_score(test_data['age'].tolist(), predsMLP, average=None, labels=ageRanges)
 	fscoreSVM = f1_score(test_data['age'].tolist(), resultSVM, average=None, labels=ageRanges)
 	fscoreSGD = f1_score(test_data['age'].tolist(), resultSGD, average=None, labels=ageRanges)
 
-	print "ACCURACY--> Bayes:",accuracyNB,"|RForest:", accuracyRF,"|SVM:", accuracySVM,"|SGD:", accuracySGD#,"|NeuralN:", accuracyMLP
-	print "F-SCORE--> Bayes:",fscoreNB,"|RForest:", fscoreRF,"|SVM:", fscoreSVM,"|SGD:", fscoreSGD#,"|NeuralN:", fscoreMLP
+	print "ACCURACY--> Bayes:",accuracyNB,"|RForest:", accuracyRF,"|SVM:", accuracySVM,"|SGD:", accuracySGD
+	print "F-SCORE--> Bayes:",fscoreNB,"|RForest:", fscoreRF,"|SVM:", fscoreSVM,"|SGD:", fscoreSGD
 	
-	return "ACCURACY--> Bayes:",accuracyNB,"|RForest:", accuracyRF,"|SVM:", accuracySVM,"|SGD:", accuracySGD,"F-SCORE--> Bayes:",fscoreNB,"|RForest:", fscoreRF,"|SVM:", fscoreSVM,"|SGD:", fscoreSGD#,"|NeuralN:", fscoreMLP#,"|NeuralN:", accuracyMLP
+	return "ACCURACY--> Bayes:",accuracyNB,"|RForest:", accuracyRF,"|SVM:", accuracySVM,"|SGD:", accuracySGD,"F-SCORE--> Bayes:",fscoreNB,"|RForest:", fscoreRF,"|SVM:", fscoreSVM,"|SGD:", fscoreSGD
 
 if __name__ == '__main__':
     main_featBOW()

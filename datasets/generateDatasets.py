@@ -9,14 +9,23 @@ from nlp_features.customStopwords import generateCustomStopWordsForallAgeRanges
 
 db_access = MongoDBUtils()
 
-db_access.export_tweetsText_toCSV('normal')
-db_access.export_tweetsText_toCSV('pedophilia')
+db_access.export_tweetsText_toCSV('normal','')
+db_access.export_tweetsText_toCSV('normal','faceAPI')
 
-db_access.export_subscriptionLists_toCSV('normal')
-db_access.export_subscriptionLists_toCSV('pedophilia')
+db_access.export_tweetsText_toCSV('pedophilia','')
+db_access.export_tweetsText_toCSV('pedophilia','faceAPI')
 
-db_access.export_customFields('normal')
-db_access.export_customFields('pedophilia')
+db_access.export_customFields('normal','')
+db_access.export_customFields('normal','faceAPI')
+
+db_access.export_customFields('pedophilia','')
+db_access.export_customFields('pedophilia','faceAPI')
+
+db_access.export_subscriptionLists_toCSV('normal','')
+db_access.export_subscriptionLists_toCSV('normal','faceAPI')
+
+db_access.export_subscriptionLists_toCSV('pedophilia','')
+db_access.export_subscriptionLists_toCSV('pedophilia','faceAPI')
 
 db_access.export_tweetsText_toCSV_balanced()
 db_access.export_customFields_balanced()
@@ -31,4 +40,3 @@ for age in ages:
 	db_access.export_subscriptionListsFromAgeRange(age)
 
 generateCustomStopWordsForallAgeRanges()
-'''

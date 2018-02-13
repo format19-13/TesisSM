@@ -46,22 +46,23 @@ def main_customFields(typeOp,balanced):
 	
 	import ml_utils as ml_utils
 	#PARAMETERS TUNING
-	#print ml_utils.SVM_param_selection(train_data[features], train_data["age"]) #RESULT: 
-	#print ml_utils.RandomForest_param_selection(train_data[features], train_data["age"])#RESULT:
-	print ml_utils.SGD_param_selection(train_data[features], train_data["age"]) #RESULT:
+	print ml_utils.SVM_param_selection(train_data[features], train_data["age"]) #RESULT: 
+	#print ml_utils.RandomForest_param_selection(train_data[features], train_data["age"])#RESULT:{'n_estimators': 140, 'max_depth': 20, 'min_samples_leaf': 2}
+	#print ml_utils.SGD_param_selection(train_data[features], train_data["age"]) #RESULT:{'penalty': 'l2', 'alpha': 0.001, 'n_iter': 50, 'loss': 'log'}
 
-
-
+	########################################
+	#******* TRAIN THE MODEL       *********
+	########################################
 
 	# Create a random forest Classifier.
-	rforest = RandomForestClassifier(n_jobs=2, random_state=0)
-	
+	rforest = RandomForestClassifier(n_estimators=140, max_depth=20,min_samples_leaf=2 )
+
 	# Initialize Multinomial Naive Bayes
 	bayes = MultinomialNB()
 
-	svm = LinearSVC(loss='hinge', penalty='l2', random_state=42)
+	svm = SVC(loss='hinge', penalty='l2', random_state=42)
 	
-	sgd = SGDClassifier(loss='log', penalty='l1', random_state=42, alpha=0.001, n_iter=50) #RESULTS:{'penalty': 'l1', 'alpha': 0.001, 'n_iter': 50, 'loss': 'log'}
+	sgd = SGDClassifier(loss='log', penalty='l2', random_state=42, alpha=0.001, n_iter=50) 
 
 	# Train the Classifier to take the training features and learn how they relate to the age
 	rforest.fit(train_data[features], y)

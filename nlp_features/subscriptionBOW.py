@@ -17,7 +17,6 @@ from sklearn.metrics import confusion_matrix
 from sklearn.metrics import classification_report
 from sklearn.naive_bayes import MultinomialNB
 from stop_words import get_stop_words
-from sklearn.neural_network import MLPClassifier
 import re
 import imp
 import time
@@ -77,8 +76,8 @@ def main_subscriptionBOW(typeOp,balanced):
 	import ml_utils as ml_utils
 	#PARAMETERS TUNING
 	#print ml_utils.SVM_param_selection(train_data_features, train_data["age"]) #RESULT:{'kernel': 'rbf', 'C': 10, 'gamma': 0.01}
-	#print ml_utils.RandomForest_param_selection(train_data_features, train_data["age"])#RESULT: 
-	print ml_utils.SGD_param_selection(train_data_features, train_data["age"]) #RESULT: 
+	#print ml_utils.RandomForest_param_selection(train_data_features, train_data["age"])#RESULT: {'n_estimators': 120, 'max_depth': 30, 'min_samples_leaf': 1}
+	#print ml_utils.SGD_param_selection(train_data_features, train_data["age"]) #RESULT: {'penalty': 'elasticnet', 'alpha': 0.0001, 'n_iter': 40, 'loss': 'log'}
 	
 
 	# ********* APLICO MODELOS Y LOS ENTRENO CON LA DATA EN TRAIN*********#
@@ -89,12 +88,12 @@ def main_subscriptionBOW(typeOp,balanced):
 	bayes = MultinomialNB()
 
 	# Initialize a Random Forest classifier with 100 trees
-	forest = RandomForestClassifier(n_estimators = 100) 
+	forest = RandomForestClassifier(n_estimators=120, max_depth= 30, min_samples_leaf= 1) 
 	# Fit the forest to the training set, using the bag of)
 
 	svm = SVC(kernel='rbf', C= 10, gamma= 0.01)
 	
-	sgd = SGDClassifier(loss='hinge', penalty='l2', random_state=42, alpha=0.001)
+	sgd = SGDClassifier(penalty = elasticnet, alpha=0.0001, n_iter=40, loss='log')
 
 	# Fit the forest to the training set, using the bag of words as 
 	# features and the age range as the response variable
@@ -120,15 +119,6 @@ def main_subscriptionBOW(typeOp,balanced):
 	resultSVM= svm.predict(test_data_features)
 
 	resultSGD= sgd.predict(test_data_features)
-
-	#clfMLP = MLPClassifier(hidden_layer_sizes=(100,100,100), max_iter=10000, alpha=0.0001,
-    #                 solver='sgd', verbose=10,  random_state=21,tol=0.000000001)
-
-	#clfMLP.fit(train_data_features, train_data["age"])
-	#predsMLP = clfMLP.predict(test_data_features)
-
-	# Copy the results to a pandas dataframe with an "id" column and
-	# a "age" column
 
 	outdir =time.strftime("%d-%m-%Y")
 	
@@ -178,26 +168,21 @@ def main_subscriptionBOW(typeOp,balanced):
 	
 	##SGD
 	ml_utils.createConfusionMatrix(test_data['age'].tolist(),resultSGD,ageRanges,'subscriptionBOW','SGD',outdir)
-	
-	##NEURAL NETWORK
-	#ml_utils.createConfusionMatrix(test_data['age'].tolist(),resultMLP,ageRanges,'featBOW','NeuralNetwork')
 
 	accuracyRF = accuracy_score(test_data['age'].tolist(), resultForest)
 	accuracyNB = accuracy_score(test_data['age'].tolist(), resultBayes)
-	#accuracyMLP = accuracy_score(test_data['age'].tolist(), predsMLP)
 	accuracySVM = accuracy_score(test_data['age'].tolist(), resultSVM)
 	accuracySGD = accuracy_score(test_data['age'].tolist(), resultSGD)
 
 	fscoreRF = f1_score(test_data['age'].tolist(), resultForest, average=None, labels=ageRanges)
 	fscoreNB = f1_score(test_data['age'].tolist(), resultBayes, average=None, labels=ageRanges)
-	#fscoreMLP = f1_score(test_data['age'].tolist(), predsMLP, average=None, labels=ageRanges)
 	fscoreSVM = f1_score(test_data['age'].tolist(), resultSVM, average=None, labels=ageRanges)
 	fscoreSGD = f1_score(test_data['age'].tolist(), resultSGD, average=None, labels=ageRanges)
 
-	print "ACCURACY--> Bayes:",accuracyNB,"|RForest:", accuracyRF,"|SVM:", accuracySVM,"|SGD:", accuracySGD#,"|NeuralN:", accuracyMLP
-	print "F-SCORE--> Bayes:",fscoreNB,"|RForest:", fscoreRF,"|SVM:", fscoreSVM,"|SGD:", fscoreSGD#,"|NeuralN:", fscoreMLP
+	print "ACCURACY--> Bayes:",accuracyNB,"|RForest:", accuracyRF,"|SVM:", accuracySVM,"|SGD:", accuracySGD
+	print "F-SCORE--> Bayes:",fscoreNB,"|RForest:", fscoreRF,"|SVM:", fscoreSVM,"|SGD:", fscoreSGD
 	
-	return "ACCURACY--> Bayes:",accuracyNB,"|RForest:", accuracyRF,"|SVM:", accuracySVM,"|SGD:", accuracySGD,"F-SCORE--> Bayes:",fscoreNB,"|RForest:", fscoreRF,"|SVM:", fscoreSVM,"|SGD:", fscoreSGD#,"|NeuralN:", fscoreMLP#,"|NeuralN:", accuracyMLP
+	return "ACCURACY--> Bayes:",accuracyNB,"|RForest:", accuracyRF,"|SVM:", accuracySVM,"|SGD:", accuracySGD,"F-SCORE--> Bayes:",fscoreNB,"|RForest:", fscoreRF,"|SVM:", fscoreSVM,"|SGD:", fscoreSGD
 
 if __name__ == '__main__':
     main_subscriptionBOW()

@@ -51,13 +51,13 @@ def runMLAlgorithms(typeOp):
 	print "Ejecutando ml para custom fields"
 	print "#################################"
 
-	accCustomFields = 0#main_customFields(typeOp,'unbalanced')
+	accCustomFields = main_customFields(typeOp,'unbalanced')
 	accCustomFieldsBalanced = 0#main_customFields(typeOp,'balanced')
 
 	print "################################################################"
 	print "Ejecutando ml para subscriptionsBOW sobre listas de suscripcion"
 	print "################################################################"
-	accSubs = main_subscriptionBOW(typeOp,'unbalanced')
+	accSubs = 0#main_subscriptionBOW(typeOp,'unbalanced')
 	accSubsBalanced = 0#main_subscriptionBOW(typeOp,'balanced')
 	#comparar resultados/accuracy contra profile pic
 
