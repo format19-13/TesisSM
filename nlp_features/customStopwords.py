@@ -49,7 +49,7 @@ def obtainMostFrequentWordsInAgeRange(ar):
 	
 	valuesTfIdf = sorted(zip(idf,transformer_tfidf.get_feature_names()), key=lambda x: x[0])[:200]
 	frequents = zip(*valuesTfIdf)[1]
-	print sorted(frequents)
+	print frequents
 	return sorted(frequents)
 
 def generateCustomStopWordsForallAgeRanges():

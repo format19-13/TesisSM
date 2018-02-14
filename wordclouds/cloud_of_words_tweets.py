@@ -80,7 +80,7 @@ def main_wordcloudsTweets():
 
 		text = removeStopWords(text, stopwords)
 	
-		wordcloud = WordCloud(width=1600, height=800).generate(text)
+		wordcloud = WordCloud(width=1600, height=800).generate(text.decode("utf-8"))
 		print "Dibujando wordcloud para ", ar, " ..."
 
 		# Open a plot of the generated image.

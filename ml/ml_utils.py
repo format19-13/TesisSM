@@ -102,9 +102,9 @@ def createConfusionMatrix(y_true,y_pred,classes,className,mlAlgorithm,outdir):
 
 def SVM_param_selection(X, y): 
     print "Tuning parameters for SVM..."
-    Cs = [8, 10, 12, 14]
-    gammas = [ 0.01, 0.1 , 1]
-    kernel=['rbf','linear']
+    Cs = [8, 12]
+    gammas = [ 0.01, 0.1]
+    kernel=['linear']
     param_grid = {'C': Cs, 'gamma' : gammas,'kernel':kernel}
     grid_search = GridSearchCV(SVC(), param_grid, cv=10)
     grid_search.fit(X, y)

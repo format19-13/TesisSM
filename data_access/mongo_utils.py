@@ -466,53 +466,57 @@ class MongoDBUtils(object):
             for user in col.find(): #para cada usuario
                 cont = cont +1
 
-                try:
-                    user['qtyUppercase']
+                if user['qtyMentions']==0 and user['qtyHashtags']==0 and user['qtyUrls']==0  and user['qtyEmojis']==0:
+                    qtyMentions=0
+                    qtyHashtags=0
+                    qtyUrls=0
+                    qtyEmojis=0
+                    qtyUppercase=0
 
-                except:
-                    if user['qtyUppercase']==0 and user['qtyMentions']==0 and user['qtyHashtags']==0 and user['qtyUrls']==0  and user['qtyEmojis']==0:
-                        qtyMentions=0
-                        qtyHashtags=0
-                        qtyUrls=0
-                        qtyEmojis=0
-                        qtyUppercase=0
+                    print user['screen_name'], "-", cont
 
-                        print user['screen_name'], "-", cont
+                    for tweet in  user['tweets']:
+                        
+                        txt= re.sub(r"http\S+", "",tweet['full_text'])
+                        txt=re.sub(r'@\w+',"", txt)
 
-                        for tweet in  user['tweets']:
-                            
-                            txt= re.sub(r"http\S+", "",tweet['full_text'])
-                            txt=re.sub(r'@\w+',"", txt)
-
-                            qtyUppercase= qtyUppercase + len(re.findall(r'[A-Z]',txt)) 
-                            qtyMentions=qtyMentions+len(tweet['entities']['user_mentions'])
-                            qtyHashtags=qtyHashtags+len(tweet['entities']['hashtags'])
-                            qtyUrls=qtyUrls+len(tweet['entities']['urls'])
-
+                        qtyUppercase= qtyUppercase + len(re.findall(r'[A-Z]',txt)) 
+                        qtyMentions=qtyMentions+len(tweet['entities']['user_mentions'])
+                        qtyHashtags=qtyHashtags+len(tweet['entities']['hashtags'])
+                        qtyUrls=qtyUrls+len(tweet['entities']['urls'])
                            # print tweet['full_text'] ,"-", len(tweet['entities']['user_mentions'])
                                 
-                            qtyEmojis= qtyEmojis + len(r.findall(txt))+len(re.findall(re2,txt))
+                        qtyEmojis= qtyEmojis + len(r.findall(txt))+len(re.findall(re2,txt))
                             
-                            qtyTweets = len(user['tweets'])
+                        qtyTweets = len(user['tweets'])
 
+                        #print qtyTweets
+                        #print qtyMentions
+                        #print qtyHashtags
+                        #print qtyEmojis
+                        #print qtyUrls
+                        #print qtyUppercase
 
-                        if round(qtyMentions/qtyTweets,2)  != user['qtyMentions']:
-                            print "cambio qtyMentions "  ,  round(qtyMentions/qtyTweets,2), '"-', user['qtyMentions'] 
-                            col.update({'screen_name' : user['screen_name'] }, {'$set' : {'qtyMentions' : round(qtyMentions/qtyTweets,2) }})
+                    if round(qtyMentions/qtyTweets,2)  != user['qtyMentions']:
+                        print "cambio qtyMentions "  ,  round(qtyMentions/qtyTweets,2), '"-', user['qtyMentions'] 
+                        col.update({'screen_name' : user['screen_name'] }, {'$set' : {'qtyMentions' : round(qtyMentions/qtyTweets,2) }})
 
-                        if round(qtyHashtags/qtyTweets,2)  != user['qtyHashtags']:
-                            print "cambio qtyHashtags "  ,  round(qtyHashtags/qtyTweets,2), '"-', user['qtyHashtags']
-                            col.update({'screen_name' : user['screen_name'] }, {'$set' : {'qtyHashtags' : round(qtyHashtags/qtyTweets,2) }}) 
+                    if round(qtyHashtags/qtyTweets,2)  != user['qtyHashtags']:
+                        print "cambio qtyHashtags "  ,  round(qtyHashtags/qtyTweets,2), '"-', user['qtyHashtags']
+                        col.update({'screen_name' : user['screen_name'] }, {'$set' : {'qtyHashtags' : round(qtyHashtags/qtyTweets,2) }}) 
 
-                        if round(qtyUrls/qtyTweets,2)  != user['qtyUrls']:
-                            print "cambio qtyUrls ",  round(qtyUrls/qtyTweets,2), '"-', user['qtyUrls']
-                            col.update({'screen_name' : user['screen_name'] }, {'$set' : {'qtyUrls'     : round(qtyUrls/qtyTweets,2) }})
+                    if round(qtyUrls/qtyTweets,2)  != user['qtyUrls']:
+                        print "cambio qtyUrls ",  round(qtyUrls/qtyTweets,2), '"-', user['qtyUrls']
+                        col.update({'screen_name' : user['screen_name'] }, {'$set' : {'qtyUrls'     : round(qtyUrls/qtyTweets,2) }})
 
-                        if round(qtyEmojis/qtyTweets,2)  != user['qtyEmojis']:
-                            print "cambio qtyEmojis " ,  round(qtyEmojis/qtyTweets,2), '"-', user['qtyEmojis'] 
-                            col.update({'screen_name' : user['screen_name'] }, {'$set' : {'qtyEmojis'     : round(qtyEmojis/qtyTweets,2) }})
-
+                    if round(qtyEmojis/qtyTweets,2)  != user['qtyEmojis']:
+                        print "cambio qtyEmojis " ,  round(qtyEmojis/qtyTweets,2), '"-', user['qtyEmojis'] 
+                        col.update({'screen_name' : user['screen_name'] }, {'$set' : {'qtyEmojis'     : round(qtyEmojis/qtyTweets,2) }})
+                    
+                    if round(qtyUppercase/qtyTweets,2)  != user['qtyUppercase']:
+                        print "cambio qtyUppercase " ,  round(qtyUppercase/qtyTweets,2), '"-', user['qtyUppercase'] 
                         col.update({'screen_name' : user['screen_name'] }, {'$set' : {'qtyUppercase' : round(qtyUppercase/qtyTweets,2) }})
+        
         except ConnectionFailure as e:
             self.logger.error('Mongo connection error', exc_info=True)
         except:
@@ -750,7 +754,7 @@ class MongoDBUtils(object):
     ####                  EXPORT SUBSCRIPTION LISTS                        #########
     ################################################################################
 
-    def export_subscriptionLists_toCSV(self,typeOp):
+    def export_subscriptionLists_toCSV(self,typeOp,faceApi):
         print "Exporting Subscription Lists ..."
         try:
             df = DataFrame(columns=('screen_name', 'subscriptionLists', 'age'))
@@ -900,7 +904,7 @@ class MongoDBUtils(object):
     ####                          EXPORT CUSTOM FIELDS                     #########
     ################################################################################
 
-    def export_customFields(self,typeOp):
+    def export_customFields(self,typeOp,faceApi):
         print "Exporting Custom Fields ..."
         try:
             df = DataFrame(columns=('screen_name', 'friends_count',  'tweets_count', 'linkedin', 'snapchat', 'instagram','facebook','followers_count','favourites_count','qtyMentions','qtyHashtags','qtyUrls', 'qtyEmojis', 'qtyUppercase','profile_pic_gender','age'))
@@ -925,28 +929,20 @@ class MongoDBUtils(object):
                     gender=2
                 
                 snapchat=0
-                if user['snapchat'] == 'True' :
+                if user['snapchat'] == True :
                     snapchat=1
-                elif user['snapchat'] == 'False' :
-                    snapchat=0
 
                 instagram=0
-                if user['instagram'] == 'True' :
+                if user['instagram'] == True :
                     instagram=1
-                elif user['instagram'] == 'False' :
-                    instagram=0
 
                 facebook=0
-                if user['facebook'] == 'True' :
+                if user['facebook'] == True :
                     facebook=1
-                elif user['facebook'] == 'False' :
-                    facebook=0
 
                 linkedin=0
-                if user['linkedin'] == 'True' :
+                if user['linkedin'] == True :
                     linkedin=1
-                elif user['linkedin'] == 'False' :
-                    linkedin=0
 
                 if typeOp == 'pedophilia':
                     if user['age'] in ['25-34','35-49','50-xx']:
@@ -998,28 +994,20 @@ class MongoDBUtils(object):
                         gender=2
                     
                     snapchat=0
-                    if user['snapchat'] == 'True' :
+                    if user['snapchat'] == True :
                         snapchat=1
-                    elif user['snapchat'] == 'False' :
-                        snapchat=0
 
                     instagram=0
-                    if user['instagram'] == 'True' :
+                    if user['instagram'] == True :
                         instagram=1
-                    elif user['instagram'] == 'False' :
-                        instagram=0
 
                     facebook=0
-                    if user['facebook'] == 'True' :
+                    if user['facebook'] == True :
                         facebook=1
-                    elif user['facebook'] == 'False' :
-                        facebook=0
 
                     linkedin=0
-                    if user['linkedin'] == 'True' :
+                    if user['linkedin'] == True :
                         linkedin=1
-                    elif user['linkedin'] == 'False' :
-                        linkedin=0
 
                     df.loc[count] = [user['screen_name'],user['friends_count'],user['statuses_count'],linkedin,snapchat,instagram,facebook,user['followers_count'],user['favourites_count'], user['qtyMentions'],user['qtyHashtags'],user['qtyUrls'], user['qtyEmojis'], user['qtyUppercase'],gender,age ]
                     count += 1

@@ -1,7 +1,7 @@
 Method,Accuracy
-Custom Fields,0
+Custom Fields,"('ACCURACY--> Bayes:', 0.42857142857142855, '|RForest:', 0.58441558441558439, '|SVM:', 0.39826839826839827, '|SGD:', 0.46753246753246752, 'F-SCORE--> Bayes:', array([ 0.40310078,  0.60663507,  0.17910448,  0.05405405,  0.22222222]), '|RForest:', array([ 0.30769231,  0.74157303,  0.36363636,  0.44444444,  0.42105263]), '|SVM:', array([ 0.39548023,  0.50961538,  0.        ,  0.        ,  0.34782609]), '|SGD:', array([ 0.41025641,  0.60098522,  0.        ,  0.43809524,  0.        ]))"
 Custom Fields Balanced,0
-Subscription List BOW,"('ACCURACY--> Bayes:', 0.36363636363636365, '|RForest:', 0.42424242424242425, '|SVM:', 0.39393939393939392, '|SGD:', 0.42424242424242425, 'F-SCORE--> Bayes:', array([ 0.        ,  0.28571429,  0.22222222,  0.45714286,  0.33333333]), '|RForest:', array([ 0.        ,  0.5625    ,  0.25      ,  0.44444444,  0.        ]), '|SVM:', array([ 0.   ,  0.6  ,  0.2  ,  0.375,  0.   ]), '|SGD:', array([ 0.        ,  0.58064516,  0.        ,  0.42105263,  0.28571429]))"
+Subscription List BOW,0
 Subscription List BOW Balanced,0
 Tweets BOW,0
 Tweets BOW Balanced,0

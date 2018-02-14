@@ -26,6 +26,7 @@ from tabulate import tabulate
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.svm import LinearSVC
 from sklearn.linear_model import SGDClassifier
+from nlp_features.customStopwords import getSpanishStopwords
 from sklearn.metrics import f1_score
 
 def main_featBigram(typeOp,balanced):
@@ -37,7 +38,8 @@ def main_featBigram(typeOp,balanced):
 		train_data=pd.read_csv(DATASET_PATH+"/"+typeOp+"_tweets_train.csv", sep=",",dtype=str)
 		test_data=pd.read_csv(DATASET_PATH+"/"+typeOp+"_tweets_test.csv", sep=",",dtype=str)
 
-	bigram_vectorizer = CountVectorizer(ngram_range=(2,3), token_pattern=r'\b\w+\b', min_df=1,strip_accents='unicode',max_features=5000) 
+	stopwords = getSpanishStopwords()
+	bigram_vectorizer = CountVectorizer(ngram_range=(2,3), token_pattern=r'\b\w+\b', min_df=1,strip_accents='unicode',max_features=5000, stop_words=stopwords) 
 
 	X_train_counts = bigram_vectorizer.fit_transform(train_data.tweets)
 	# fit_transform() fits the model and learns the vocabulary; second, it transforms our training data
