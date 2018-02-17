@@ -83,18 +83,18 @@ def createConfusionMatrix(y_true,y_pred,classes,className,mlAlgorithm,outdir):
     plot_confusion_matrix(cnf_matrix, classes,normalize=False,
                         title='Confusion matrix, without normalization for '+className+ '-'+ mlAlgorithm)
     
-    outname = 'ml_'+className+'_'+ mlAlgorithm+'_confusionMatrixNotNormalized.png'
+    outname = 'ml_'+className+'_'+ mlAlgorithm+'_confusionMatrix.png'
     fullname = os.path.join(outdir, outname)    
     fig1.savefig(fullname)
 
     # Plot normalized confusion matrix
-    fig2 = plt.figure()
-    plot_confusion_matrix(cnf_matrix, classes, normalize=True,
-                    title='Normalized confusion matrix for '+className+ '-'+ mlAlgorithm)
+    #fig2 = plt.figure()
+    #plot_confusion_matrix(cnf_matrix, classes, normalize=True,
+    #                title='Normalized confusion matrix for '+className+ '-'+ mlAlgorithm)
     
-    outname = 'ml_'+className+'_'+ mlAlgorithm+'_confusionMatrixNormalized.png'
-    fullname = os.path.join(outdir, outname)
-    fig2.savefig(fullname)
+    #outname = 'ml_'+className+'_'+ mlAlgorithm+'_confusionMatrixNormalized.png'
+    #fullname = os.path.join(outdir, outname)
+    #fig2.savefig(fullname)
 
 #####################################
 ##      HYPERPARAMETER TUNING
@@ -102,9 +102,9 @@ def createConfusionMatrix(y_true,y_pred,classes,className,mlAlgorithm,outdir):
 
 def SVM_param_selection(X, y): 
     print "Tuning parameters for SVM..."
-    Cs = [8, 12]
-    gammas = [ 0.01, 0.1]
-    kernel=['linear']
+    Cs = [8, 10,12,14]
+    gammas = [ 0.001, 0.01, 0.1,1]
+    kernel=['rbf']
     param_grid = {'C': Cs, 'gamma' : gammas,'kernel':kernel}
     grid_search = GridSearchCV(SVC(), param_grid, cv=10)
     grid_search.fit(X, y)
@@ -116,9 +116,9 @@ def RandomForest_param_selection(X, y):
     print "Tuning parameters for RandomForest..."
 
     param_grid = { 
-           "n_estimators" : [120, 140,160, 180],
-           "max_depth" : [20,25, 30, 35 ],
-           "min_samples_leaf" : [1, 2, 3, 4]}
+           "n_estimators" : [120,160],
+           "max_depth" : [20, 30 ],
+           "min_samples_leaf" : [1, 3]}
  
     grid_search = GridSearchCV(estimator=RandomForestClassifier(), param_grid=param_grid, cv= 10)
     grid_search.fit(X, y)
@@ -129,10 +129,10 @@ def RandomForest_param_selection(X, y):
 def SGD_param_selection(X,y): 
     print "Tuning parameters for SGD..."
     param_grid = {
-        'n_iter': [40, 50, 60],
+        'n_iter': [40, 60],
         'loss': ('log', 'hinge'),
-        'penalty': ['l1', 'l2', 'elasticnet'],
-        'alpha': [0.001, 0.0001, 0.00001]
+        'penalty': ['l1', 'l2'],
+        'alpha': [0.001, 0.00001]
     }
     grid_search = GridSearchCV(estimator=SGDClassifier(), param_grid=param_grid, cv= 10)
     grid_search.fit(X, y)

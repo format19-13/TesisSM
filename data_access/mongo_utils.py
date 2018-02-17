@@ -589,7 +589,7 @@ class MongoDBUtils(object):
     def export_tweetsText_toCSV(self,typeOp,faceApi):
         print "Exporting tweetsText ..."
         try:
-            df = DataFrame(columns=('screen_name', 'tweets', 'age'))
+            df = DataFrame(columns=('screen_name', 'friends_count',  'tweets_count', 'linkedin', 'snapchat', 'instagram','facebook','followers_count','favourites_count','qtyMentions','qtyHashtags','qtyUrls', 'qtyEmojis', 'qtyUppercase','profile_pic_gender','tweets', 'age'))
             # Obtiene una referencia a la instancia de la DB
             db = self.mongo_client[MONGO_DB_NAME]
             # Obtiene el ObjectID Mongo del perfil del data source para el usuario
@@ -604,9 +604,32 @@ class MongoDBUtils(object):
             for user in cursor: #para cada usuario
                 tweetText=""
                 age=user['age']
+
                 if typeOp == 'pedophilia':
                     if user['age'] in ['25-34','35-49','50-xx']:
                         age='25-xx'
+
+                gender=0
+                if user['profile_pic_gender'] == 'male' :
+                    gender=1
+                elif user['profile_pic_gender'] == 'female' :
+                    gender=2
+                
+                snapchat=0
+                if user['snapchat'] == True :
+                    snapchat=1
+
+                instagram=0
+                if user['instagram'] == True :
+                    instagram=1
+
+                facebook=0
+                if user['facebook'] == True :
+                    facebook=1
+
+                linkedin=0
+                if user['linkedin'] == True :
+                    linkedin=1
 
                 for tweet in  user['tweets']:
                     cleanedTweet= re.sub(r"http\S+", "",tweet['full_text'])
@@ -617,7 +640,7 @@ class MongoDBUtils(object):
                     else:
                         tweetText= tweetText +'. '+ cleanedTweet.encode('utf-8')
 
-                df.loc[count] = [user['screen_name'],tweetText,age]
+                df.loc[count] = [user['screen_name'],user['friends_count'],user['statuses_count'],linkedin,snapchat,instagram,facebook,user['followers_count'],user['favourites_count'], user['qtyMentions'],user['qtyHashtags'],user['qtyUrls'], user['qtyEmojis'], user['qtyUppercase'],gender,tweetText,age]
                 count += 1
 
             # Split into training and test set
@@ -675,7 +698,7 @@ class MongoDBUtils(object):
         ageRanges = self.getAgeRanges()
 
         try:
-            df = DataFrame(columns=('screen_name', 'tweets', 'age'))
+            df = DataFrame(columns=('screen_name', 'friends_count',  'tweets_count', 'linkedin', 'snapchat', 'instagram','facebook','followers_count','favourites_count','qtyMentions','qtyHashtags','qtyUrls', 'qtyEmojis', 'qtyUppercase','profile_pic_gender','tweets', 'age'))
             # Obtiene una referencia a la instancia de la DB
             db = self.mongo_client[MONGO_DB_NAME]
             # Obtiene el ObjectID Mongo del perfil del data source para el usuario
@@ -683,9 +706,31 @@ class MongoDBUtils(object):
             count=0
 
             for ageR in ageRanges:
-                for user in col.find({"age":ageR}).limit(51) :
+                for user in col.find({"age":ageR}).limit(59) :
                     tweetText=""
                     age=user['age']
+
+                    gender=0
+                    if user['profile_pic_gender'] == 'male' :
+                        gender=1
+                    elif user['profile_pic_gender'] == 'female' :
+                        gender=2
+                
+                    snapchat=0
+                    if user['snapchat'] == True :
+                        snapchat=1
+
+                    instagram=0
+                    if user['instagram'] == True :
+                        instagram=1
+
+                    facebook=0
+                    if user['facebook'] == True :
+                        facebook=1
+
+                    linkedin=0
+                    if user['linkedin'] == True :
+                        linkedin=1
 
                     for tweet in  user['tweets']:
                         cleanedTweet= re.sub(r"http\S+", "",tweet['full_text'])
@@ -696,7 +741,8 @@ class MongoDBUtils(object):
                         else:
                             tweetText= tweetText +'. '+ cleanedTweet.encode('utf-8')
 
-                    df.loc[count] = [user['screen_name'],tweetText,age]
+                    df.loc[count] = [user['screen_name'],user['friends_count'],user['statuses_count'],linkedin,snapchat,instagram,facebook,user['followers_count'],user['favourites_count'], user['qtyMentions'],user['qtyHashtags'],user['qtyUrls'], user['qtyEmojis'], user['qtyUppercase'],gender,tweetText,age]
+
                     count += 1
             
             # Split into training and test set
@@ -710,45 +756,6 @@ class MongoDBUtils(object):
 
         except Exception as e:
             print e
-
-    def export_tweetsLabeled(self):
-        # Obtiene una referencia a la instancia de la DB
-        db = self.mongo_client[MONGO_DB_NAME]
-        # Obtiene el ObjectID Mongo del perfil del data source para el usuario
-        col = db[DB_COL_USERS]
-
-        colUnlabeled = db["unlabeled_users"]
-
-        df = DataFrame(columns=('screen_name', 'tweet text','age', 'ageRange','profile_pic_age'))
-        #print 'screen_name',',', 'tweet text',',','age',',', 'ageRange',',','profile_pic_age'
-        count=0
-        for user in col.find(): #para cada usuario
-            print user['screen_name']
-            ageReal=-1
-            try:
-                regx = re.compile(user['screen_name'], re.IGNORECASE)
-                userLabeled=colUnlabeled.find({"screen_name": regx})
-
-                for userL in userLabeled:
-                    ageReal=userL['age']
-
-            except Exception as a:
-                #print "Error with user: ", user['screen_name'], " while getting real age"
-                #print a
-                pass
-
-            for tweet in  user['tweets']:
-                try:
-                    df.loc[count] = [user['screen_name'],tweet['full_text'],ageReal, user['age'],user['profile_pic_age'] ]
-                    #print user['screen_name'],",",tweet['text'],",",ageReal,",", user['age'],",",user['profile_pic_age']
-                    count += 1
-                except Exception as a:
-                    #print "Error with user: ", user['screen_name'] 
-                    #print a
-                    pass
-        print "Generando el archivo tweetsLabeled.csv.."
-        df.to_csv('tweetsLabeled.csv', index=False, encoding='utf-8')
-
 
     ################################################################################
     ####                  EXPORT SUBSCRIPTION LISTS                        #########
