@@ -43,7 +43,7 @@ def main_subscriptionNgrams(typeOp,balanced):
 
 	stopwords = getSpanishStopwords()  
 
-	count_vect = CountVectorizer(stop_words=stopwords, max_features=50000,ngram_range=(1,3), token_pattern=r'\b\w+\b' )
+	count_vect = CountVectorizer(stop_words=stopwords, max_features=5000,ngram_range=(1,3), token_pattern=r'\b\w+\b' )
 	X_train_counts = count_vect.fit_transform(train_data.subscriptionLists)
 	# fit_transform() fits the model and learns the vocabulary; second, it transforms our training data
 	# into feature vectors. 
@@ -143,7 +143,7 @@ def main_subscriptionNgrams(typeOp,balanced):
 
 	headers = ["name", "score"]
 	values = sorted(zip(vocab, forest.feature_importances_), key=lambda x: x[1] * -1)
-	print(tabulate(values[:100], headers, tablefmt="plain"))
+	print(tabulate(values, headers, tablefmt="plain"))
 
 	###################################
 	#******* MODEL EVALUATION *********

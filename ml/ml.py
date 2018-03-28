@@ -88,12 +88,12 @@ def runMLAlgorithms(typeOp, balancedFlag):
 	print "########################################"
 	print "Ejecutando ml para tweetNgrams sobre tweets"
 	print "########################################"
-	accTweetNgrams = 0#main_tweetNgrams(typeOp,balancedFlag)
+	accTweetNgrams = main_tweetNgrams(typeOp,balancedFlag)
 
 	print "##############################################################"
 	print "Ejecutando ml para tweetNgramsAndCustomFields sobre tweets"
 	print "##############################################################"
-	accTweetNgramsAndCustomFields = main_tweetNgramsAndCustomFields(typeOp,balancedFlag)
+	accTweetNgramsAndCustomFields = 0#main_tweetNgramsAndCustomFields(typeOp,balancedFlag)
 
 	print "################################################################"
 	print "Ejecutando ml para subscriptionsBOW sobre listas de suscripcion"

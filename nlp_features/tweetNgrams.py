@@ -29,12 +29,12 @@ def main_tweetNgrams(typeOp,balanced):
 		train_data=pd.read_csv(DATASET_PATH+"/tweets_balanced_train.csv", sep=",",dtype=str)[['screen_name','tweets','age']]
 		test_data=pd.read_csv(DATASET_PATH+"/tweets_balanced_test.csv", sep=",",dtype=str)[['screen_name','tweets','age']]
 	else:
-		train_data=pd.read_csv(DATASET_PATH+"/"+typeOp+"_tweets_train.csv", sep=",",dtype=str)[['screen_name','tweets','age']]
-		test_data=pd.read_csv(DATASET_PATH+"/"+typeOp+"_tweets_test.csv", sep=",",dtype=str)[['screen_name','tweets','age']]
+		#train_data=pd.read_csv(DATASET_PATH+"/"+typeOp+"_tweets_train.csv", sep=",",dtype=str)[['screen_name','tweets','age']]
+		#test_data=pd.read_csv(DATASET_PATH+"/"+typeOp+"_tweets_test.csv", sep=",",dtype=str)[['screen_name','tweets','age']]
 
 		#EXPERIMENT 4
-		#train_data=pd.read_csv(DATASET_PATH+"/"+typeOp+"_faceAPI_tweets_train.csv", sep=",",dtype=str)[['screen_name','tweets','age']]
-		#test_data=pd.read_csv(DATASET_PATH+"/"+typeOp+"_faceAPI_tweets_test.csv", sep=",",dtype=str)[['screen_name','tweets','age']]
+		train_data=pd.read_csv(DATASET_PATH+"/"+typeOp+"_faceAPI_tweets_train.csv", sep=",",dtype=str)[['screen_name','tweets','age']]
+		test_data=pd.read_csv(DATASET_PATH+"/"+typeOp+"_faceAPI_tweets_test.csv", sep=",",dtype=str)[['screen_name','tweets','age']]
 
 	# Show the number of observations for the test and training dataframes
 	print 'Number of observations in the training data:', len(train_data)
@@ -146,7 +146,7 @@ def main_tweetNgrams(typeOp,balanced):
 
    	outdir=outdir +"/"+typeOp
 
-	output = pd.DataFrame( data={"id":test_data["screen_name"], "realAge":test_data["age"], "ageRandomForest":resultForest,"ageNaiveBayes":resultBayes,"ageSVM":resultSVM,"ageSGD":resultSGD})
+	output = pd.DataFrame( data={"id":test_data["screen_name"], "realAge":test_data["age"], "ageRandomForest":resultForest,"ageNaiveBayes":resultBayes,"ageSVM":resultSVM,"ageSGD":resultSGD]})
 	#print output
 
 	# Use pandas to write the comma-separated output file
@@ -154,8 +154,8 @@ def main_tweetNgrams(typeOp,balanced):
 	fullname = os.path.join(outdir, outname)    
 	output.to_csv(fullname,index=False)
 
-	df_tfidf= pd.DataFrame(valuesTfIdf, columns = ["score", "word"]) 
-	df_tfidf.to_csv(fullname,index=False)
+	#df_tfidf= pd.DataFrame(valuesTfIdf, columns = ["score", "word"]) 
+	#df_tfidf.to_csv(fullname,index=False)
 
 	# View a list of the features and their importance scores
 	print "Importance of Features: "#, sort(zip(train_data_features, forest.feature_importances_))
@@ -181,7 +181,7 @@ def main_tweetNgrams(typeOp,balanced):
 
    	data = df_complete[['screen_name',  'tweets']]
 	data = transformer_tfidf.fit_transform(data.tweets)
-	y_complete = df_complete['age']#ml_utils.convertToInt(df_complete['age'],typeOp)
+	y_complete = df_complete['age']
 
 
 	name_prefix='tweetNgrams_'+typeOp+'_'+balanced
