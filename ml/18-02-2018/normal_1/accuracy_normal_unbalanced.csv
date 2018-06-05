@@ -1,5 +1,0 @@
-Method,Accuracy
-Custom Fields,0
-Tweets Ngrams,"('ACCURACY--> N.Bayes:', 0.59, '|RForest:', 0.59, '|SVM:', 0.62, '|SGD:', 0.62)"
-Tweets Ngrams+customFields,0
-Subscription List Ngrams,0

@@ -5,7 +5,6 @@ import os, sys
 sys.path.append(os.path.abspath(os.pardir))
 
 from configs.settings import *
-from data_access.mongo_utils import MongoDBUtils
 from ml_customFields.ml_customFields import main_customFields
 from nlp_features.tweetNgrams import main_tweetNgrams
 from nlp_features.subscriptionNgrams import main_subscriptionNgrams
@@ -13,62 +12,6 @@ from nlp_features.tweetNgramsAndCustomFields import main_tweetNgramsAndCustomFie
 import time
 import pandas as pd
 
-def getAccuracyFromProfilePic():
-	db_access = MongoDBUtils()
-	users = db_access.get_users("users")
-	cantUsers=0
-	cantAciertos=0
-
-	cant1017=0
-	cant1824=0
-	cant2534=0
-	cant3549=0
-	cant50xx=0
-
-	for user in users:
-		ageRange = user["age"].split('-')
-		profilePicAge = user["profile_pic_age"]
-
-		rangeFrom=int(ageRange[0])
-
-		try:
-			rangeTo=int(ageRange[1])
-		except: 
-			rangeTo=100
-
-		if profilePicAge != -1:		
-			cantUsers=cantUsers+1
-			if (profilePicAge >= rangeFrom and profilePicAge<=rangeTo):
-				cantAciertos=cantAciertos+1
-
-			if 10 <= profilePicAge <= 17:
-				cant1017 += 1
-			elif 18 <= profilePicAge <= 24:
-				cant1824 += 1
-			elif 25 <= profilePicAge <= 34:
-				cant2534 += 1
-			elif 35 <= profilePicAge <= 49:
-				cant3549 += 1
-			elif 50 <= profilePicAge <= 99:
-				cant50xx += 1
-			else:
-				print profilePicAge
-
-
-	print "Cant users con profile pic age: ", cantUsers
-	print "Cant aciertos: ", cantAciertos
-	
-	print "Cant de users por age group:"
-	print '10-17: ', cant1017
-	print '18-24: ', cant1824
-	print '25-34: ', cant2534
-	print '35-49: ', cant3549
-	print '50-xx: ', cant50xx
-
-	accuracy=round(cantAciertos/cantUsers,2)
-	
-	print "Accuracy: ", accuracy
-	return accuracy
 
 #print "Calculando accuracy de Profile Pic: " 
 #print getAccuracyFromProfilePic()

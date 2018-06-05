@@ -13,7 +13,7 @@ from tabulate import tabulate
 
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.naive_bayes import MultinomialNB
-from sklearn.linear_model import SGDClassifier
+from sklearn.linear_model import SGDClassifier, LinearRegression
 from sklearn.svm import SVC
 
 from sklearn.feature_extraction.text import CountVectorizer
@@ -57,11 +57,6 @@ def main_tweetNgrams(typeOp,balanced):
 	transformer_tfidf = TfidfVectorizer(smooth_idf=False,lowercase=False,stop_words=stopwords,max_features=5000, ngram_range=(1,3))
 	tfidf = transformer_tfidf.fit_transform(train_data.tweets)
 
-	headers = ["name", "score"]
-	idf = transformer_tfidf.idf_
-	print "Most frequent TFIDF terms in dataset: "
-	valuesTfIdf = sorted(zip(idf,transformer_tfidf.get_feature_names()), key=lambda x: x[0])
-	print(tabulate(valuesTfIdf, headers, tablefmt="plain"))
 
 	##To see occurrences of a specific word:
 	#print count_vect.vocabulary_.get(u'amigos')
@@ -110,16 +105,19 @@ def main_tweetNgrams(typeOp,balanced):
 
 	sgd = SGDClassifier(loss='log', penalty='l2', random_state=42, alpha=0.0001,n_iter=60)
 
+	regr = LinearRegression()
 	# Fit the forest to the training set, using the bag of words as 
 	# features and the age range as the response variable
 
-	forest = forest.fit( train_data_features, train_data["age"] ) 
+	#forest = forest.fit( train_data_features, train_data["age"] ) 
 
-	bayes = bayes.fit( train_data_features, train_data["age"] ) 
+	#bayes = bayes.fit( train_data_features, train_data["age"] ) 
 
-	svm = svm.fit(train_data_features, train_data["age"] ) 
+	#svm = svm.fit(train_data_features, train_data["age"] ) 
 
-	sgd= sgd.fit(train_data_features, train_data["age"] ) 
+	#sgd= sgd.fit(train_data_features, train_data["age"] ) 
+
+	regr = regr.fit(train_data_features, train_data["age"])
 	
 	# Read the test data
 
@@ -128,13 +126,16 @@ def main_tweetNgrams(typeOp,balanced):
 	test_data_features = test_data_features.toarray()
 
 	# Use the random forest to make age range predictions
-	resultForest = forest.predict(test_data_features)
+	#resultForest = forest.predict(test_data_features)
 
-	resultBayes = bayes.predict(test_data_features)
+	#resultBayes = bayes.predict(test_data_features)
+	#print "resultbayes: ", resultBayes
 
-	resultSVM= svm.predict(test_data_features)
+	#resultSVM= svm.predict(test_data_features)
 
-	resultSGD= sgd.predict(test_data_features)
+	#resultSGD= sgd.predict(test_data_features)
+
+	resultLR = regr.predict(test_data_features)
 
 	outdir =time.strftime("%d-%m-%Y")
 	
@@ -146,22 +147,13 @@ def main_tweetNgrams(typeOp,balanced):
 
    	outdir=outdir +"/"+typeOp
 
-	output = pd.DataFrame( data={"id":test_data["screen_name"], "realAge":test_data["age"], "ageRandomForest":resultForest,"ageNaiveBayes":resultBayes,"ageSVM":resultSVM,"ageSGD":resultSGD]})
-	#print output
+	output = pd.DataFrame(data={"id":test_data["screen_name"], "realAge":test_data["age"], "ageRandomForest":resultForest,"ageNaiveBayes":resultBayes,"ageSVM":resultSVM,"ageSGD":resultSGD})
 
 	# Use pandas to write the comma-separated output file
 	outname = 'tweets_ngrams_results.csv'
 	fullname = os.path.join(outdir, outname)    
 	output.to_csv(fullname,index=False)
 
-	#df_tfidf= pd.DataFrame(valuesTfIdf, columns = ["score", "word"]) 
-	#df_tfidf.to_csv(fullname,index=False)
-
-	# View a list of the features and their importance scores
-	print "Importance of Features: "#, sort(zip(train_data_features, forest.feature_importances_))
-	vocab = transformer_tfidf.get_feature_names()
-	values = sorted(zip(vocab, forest.feature_importances_), key=lambda x: x[1] * -1)
-	print(tabulate(values[:100], headers, tablefmt="plain"))
 
 	###################################
 	#******* MODEL EVALUATION *********
@@ -188,51 +180,54 @@ def main_tweetNgrams(typeOp,balanced):
    	#--------------
 	##BAYES
 	#--------------
-	print "Metrics for Naive Bayes:"
-	ml_utils.createConfusionMatrix(test_data['age'].tolist(),resultBayes,ageRanges,name_prefix,'NaiveBayes',outdir)
-	print classification_report(test_data['age'].tolist(), resultBayes, target_names=target_names)
+	#print "Metrics for Naive Bayes:"
+	#ml_utils.createConfusionMatrix(test_data['age'].tolist(),resultBayes,ageRanges,name_prefix,'NaiveBayes',outdir)
+	#print classification_report(test_data['age'].tolist(), resultBayes, target_names=target_names)
 
-	scores = cross_val_score(bayes, data, y_complete, cv=StratifiedKFold(n_splits=10, shuffle=True, random_state = 5),scoring=make_scorer(accuracy_score))
-	accuracyNB = round(scores.mean(),2)	
-	print "10-Fold Accuracy: ", accuracyNB
+	#scores = cross_val_score(bayes, data, y_complete, cv=StratifiedKFold(n_splits=10, shuffle=True, random_state = 5),scoring=make_scorer(accuracy_score))
+	#accuracyNB = round(scores.mean(),2)	
+	#print "10-Fold Accuracy: ", accuracyNB
 
 	#--------------
 	##RANDOM FOREST
 	#--------------
-	print "Metrics for Random Forest:"
-	ml_utils.createConfusionMatrix(test_data['age'].tolist(),resultForest,ageRanges,name_prefix,'RandomForest',outdir)
-	print classification_report(test_data['age'].tolist(), resultForest, target_names=target_names)
+	#print "Metrics for Random Forest:"
+	#ml_utils.createConfusionMatrix(test_data['age'].tolist(),resultForest,ageRanges,name_prefix,'RandomForest',outdir)
+	#print classification_report(test_data['age'].tolist(), resultForest, target_names=target_names)
 	
-	scores = cross_val_score(forest, data, y_complete, cv=StratifiedKFold(n_splits=10, shuffle=True, random_state = 5),scoring=make_scorer(accuracy_score))
-	accuracyRF = round(scores.mean(),2)	
-	print "10-Fold Accuracy: ", accuracyRF 
+	#scores = cross_val_score(forest, data, y_complete, cv=StratifiedKFold(n_splits=10, shuffle=True, random_state = 5),scoring=make_scorer(accuracy_score))
+	#accuracyRF = round(scores.mean(),2)	
+	#print "10-Fold Accuracy: ", accuracyRF 
 
 	#--------------
 	##SVM
 	#--------------
-	print "Metrics for SVM:"
-	ml_utils.createConfusionMatrix(test_data['age'].tolist(),resultSVM,ageRanges,name_prefix,'SVM',outdir)
-	print classification_report(test_data['age'].tolist(), resultSVM, target_names=target_names)
+	#print "Metrics for SVM:"
+	#ml_utils.createConfusionMatrix(test_data['age'].tolist(),resultSVM,ageRanges,name_prefix,'SVM',outdir)
+	#print classification_report(test_data['age'].tolist(), resultSVM, target_names=target_names)
 	
-	scores = cross_val_score(svm, data, y_complete, cv=StratifiedKFold(n_splits=10, shuffle=True, random_state = 5),scoring=make_scorer(accuracy_score))
-	accuracySVM = round(scores.mean(),2)	
-	print "10-Fold Accuracy: ", accuracySVM
+	#scores = cross_val_score(svm, data, y_complete, cv=StratifiedKFold(n_splits=10, shuffle=True, random_state = 5),scoring=make_scorer(accuracy_score))
+	#accuracySVM = round(scores.mean(),2)	
+	#print "10-Fold Accuracy: ", accuracySVM
 
 	#--------------
 	##SGD
 	#--------------
-	print "Metrics for SGD:"
-	ml_utils.createConfusionMatrix(test_data['age'].tolist(),resultSGD,ageRanges,name_prefix,'SGD',outdir)
-	print classification_report(test_data['age'].tolist(), resultSGD, target_names=target_names)
+	#print "Metrics for SGD:"
+	#ml_utils.createConfusionMatrix(test_data['age'].tolist(),resultSGD,ageRanges,name_prefix,'SGD',outdir)
+	#print classification_report(test_data['age'].tolist(), resultSGD, target_names=target_names)
 
-	scores = cross_val_score(sgd, data, y_complete, cv=StratifiedKFold(n_splits=10, shuffle=True, random_state = 5),scoring=make_scorer(accuracy_score))
-	accuracySGD = round(scores.mean(),2)	
-	print "10-Fold Accuracy: ", accuracySGD 
+	#scores = cross_val_score(sgd, data, y_complete, cv=StratifiedKFold(n_splits=10, shuffle=True, random_state = 5),scoring=make_scorer(accuracy_score))
+	#accuracySGD = round(scores.mean(),2)	
+	#print "10-Fold Accuracy: ", accuracySGD 
+
+
+
 	#--------------
 	##OUTPUT
 	#--------------
-	result= "ACCURACY--> N.Bayes:",accuracyNB,"|RForest:", accuracyRF,"|SVM:", accuracySVM,"|SGD:", accuracySGD
-	print result
+	result= "ACCURACY--> N.Bayes:",0,"|RForest:", 0,"|SVM:", 0,"|SGD:", 0
+	#print result
 	return result
 
 if __name__ == '__main__':

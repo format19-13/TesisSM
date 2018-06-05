@@ -138,12 +138,6 @@ def main_subscriptionNgrams(typeOp,balanced):
 	fullname = os.path.join(outdir, outname)    
 	output.to_csv(fullname,index=False)
 
-	# View a list of the features and their importance scores
-	print "Importance of Features: "
-
-	headers = ["name", "score"]
-	values = sorted(zip(vocab, forest.feature_importances_), key=lambda x: x[1] * -1)
-	print(tabulate(values, headers, tablefmt="plain"))
 
 	###################################
 	#******* MODEL EVALUATION *********

@@ -150,18 +150,6 @@ def main_tweetNgramsAndCustomFields(typeOp,balanced):
 	fullname = os.path.join(outdir, outname)    
 	output.to_csv(fullname,index=False)
 
-	# View a list of the features and their importance scores
-	print "Importance of Features: "#, sort(zip(train_data_features, forest.feature_importances_))
-
-	vocab = transformer_tfidf.get_feature_names()+['friends_count',  'tweets_count', 'linkedin', 'snapchat', 'instagram','facebook','followers_count','favourites_count','qtyMentions','qtyHashtags','qtyUrls', 'qtyEmojis', 'qtyUppercase','profile_pic_gender']
-	headers = ["name", "score"]
-	values = sorted(zip(vocab, forest.feature_importances_), key=lambda x: x[1] * -1)
-	print(tabulate(values, headers, tablefmt="plain"))
-	'''
-	headers = ["name", "score"]
-	values = sorted(zip(vocab, forest.feature_importances_), key=lambda x: x[1] * -1)
-	print(tabulate(values[:100], headers, tablefmt="plain"))
-	'''
 	###################################
 	#******* MODEL EVALUATION *********
 	###################################
