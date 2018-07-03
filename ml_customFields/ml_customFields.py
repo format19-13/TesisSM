@@ -4,6 +4,7 @@ import os,sys
 import os.path
 import pandas as pd
 sys.path.append(os.path.abspath(os.pardir))
+from ggplot import *
 
 from configs.settings import *
 from data_access.mongo_utils import MongoDBUtils
@@ -15,8 +16,16 @@ from sklearn.naive_bayes import MultinomialNB
 from sklearn.linear_model import SGDClassifier
 from sklearn.svm import SVC
 
+from sklearn.cluster import KMeans
 from sklearn.metrics import accuracy_score,make_scorer,classification_report
 from sklearn.model_selection import cross_val_score,StratifiedKFold
+import matplotlib.pyplot as plt
+import numpy as np
+from mpl_toolkits.mplot3d import Axes3D
+from matplotlib import pyplot
+from sklearn.manifold import TSNE
+from sklearn.decomposition import PCA
+
 
 def main_customFields(typeOp,balanced):
 	
@@ -64,9 +73,36 @@ def main_customFields(typeOp,balanced):
 
 	bayes = MultinomialNB()
 	
-	svm = SVC(kernel='rbf', C= 8, gamma= 0.01)
+	svm = SVC(kernel='rbf', C= 8, gamma= 0.01,probability=True)
 	
 	sgd = SGDClassifier(loss='log', penalty='l2', random_state=42, alpha=0.001, n_iter=50) 
+
+	km = KMeans(n_clusters = 8)                   
+	km.fit(train_data_features)
+	feat_cols = features
+	train_data_features['km'] = km.labels_
+	test_data_features['km'] = km.predict(test_data_features)
+	n_sne = 800
+	time_start = time.time()
+	pca = PCA(n_components=3)
+	pca_result = pca.fit_transform(train_data_features[feat_cols].values)
+
+	train_data_features['pca-one'] = pca_result[:,0]
+	train_data_features['pca-two'] = pca_result[:,1] 
+	train_data_features['pca-three'] = pca_result[:,2]
+	rndperm = np.random.permutation(train_data_features.shape[0])
+
+	print 'Explained variation per principal component: {}'.format(pca.explained_variance_ratio_)
+	tsne = TSNE(n_components=2, verbose=1, perplexity=40, n_iter=300)
+	tsne_results = tsne.fit_transform(train_data_features.loc[rndperm[:n_sne],feat_cols].values)
+	df_tsne = train_data_features.loc[rndperm[:n_sne],:].copy()
+	df_tsne['x-tsne'] = tsne_results[:,0]
+	df_tsne['y-tsne'] = tsne_results[:,1]
+
+	chart = ggplot( df_tsne, aes(x='x-tsne', y='y-tsne', color='km') ) \
+        + geom_point(size=70,alpha=0.1) \
+        + ggtitle("tSNE dimensions colored by digit")
+	chart.show()
 
 	# Train the Classifier to take the training features and learn how they relate to the age
 	forest.fit(train_data_features, y)
@@ -143,6 +179,14 @@ def main_customFields(typeOp,balanced):
 
 	scores = cross_val_score(bayes, data, y_complete, cv=StratifiedKFold(n_splits=10, shuffle=True, random_state = 5),scoring=make_scorer(accuracy_score))
 	accuracyNB = round(scores.mean(),2)	
+
+	prob_pos_clf = bayes.predict_proba(test_data_features)[:, 1]
+	order = np.lexsort((prob_pos_clf, ))
+	plt.gcf().clear()
+	plt.plot(prob_pos_clf[order], 'r', label='No calibration ')
+	outname = 'ml_customFields_'+ "bayes"+'_probabilityDistribution.png'
+	fullname = os.path.join(outdir, outname)    
+	plt.savefig(fullname)
 	print "10-Fold Accuracy: ", accuracyNB
 
 	#--------------
@@ -153,7 +197,14 @@ def main_customFields(typeOp,balanced):
 	print classification_report(test_data['age'].tolist(), resultForest, target_names=target_names)
 	
 	scores = cross_val_score(forest, data, y_complete, cv=StratifiedKFold(n_splits=10, shuffle=True, random_state = 5),scoring=make_scorer(accuracy_score))
-	accuracyRF = round(scores.mean(),2)	
+	accuracyRF = round(scores.mean(),2)
+	prob_pos_clf = forest.predict_proba(test_data_features)[:, 1]
+	order = np.lexsort((prob_pos_clf, ))
+	plt.gcf().clear()
+	plt.plot(prob_pos_clf[order], 'r', label='No calibration ')
+	outname = 'ml_customFields_'+ "forest"+'_probabilityDistribution.png'
+	fullname = os.path.join(outdir, outname)    
+	plt.savefig(fullname)	
 	print "10-Fold Accuracy: ", accuracyRF 
 
 	#--------------
@@ -164,7 +215,14 @@ def main_customFields(typeOp,balanced):
 	print classification_report(test_data['age'].tolist(), resultSVM, target_names=target_names)
 	
 	scores = cross_val_score(svm, data, y_complete, cv=StratifiedKFold(n_splits=10, shuffle=True, random_state = 5),scoring=make_scorer(accuracy_score))
-	accuracySVM = round(scores.mean(),2)	
+	accuracySVM = round(scores.mean(),2)
+	prob_pos_clf = svm.predict_proba(test_data_features)[:, 1]
+	order = np.lexsort((prob_pos_clf, ))
+	plt.gcf().clear()
+	plt.plot(prob_pos_clf[order], 'r', label='No calibration ')
+	outname = 'ml_customFields_'+ "svm"+'_probabilityDistribution.png'
+	fullname = os.path.join(outdir, outname)    
+	plt.savefig(fullname)	
 	print "10-Fold Accuracy: ", accuracySVM
 
 	#--------------
@@ -175,7 +233,14 @@ def main_customFields(typeOp,balanced):
 	print classification_report(test_data['age'].tolist(), resultSGD, target_names=target_names)
 
 	scores = cross_val_score(sgd, data, y_complete, cv=StratifiedKFold(n_splits=10, shuffle=True, random_state = 5),scoring=make_scorer(accuracy_score))
-	accuracySGD = round(scores.mean(),2)	
+	accuracySGD = round(scores.mean(),2)
+	prob_pos_clf = sgd.predict_proba(test_data_features)[:, 1]
+	order = np.lexsort((prob_pos_clf, ))
+	plt.gcf().clear()
+	plt.plot(prob_pos_clf[order], 'r', label='No calibration ')
+	outname = 'ml_customFields_'+ "sgd"+'_probabilityDistribution.png'
+	fullname = os.path.join(outdir, outname)    
+	plt.savefig(fullname)	
 	print "10-Fold Accuracy: ", accuracySGD 
 
 	#--------------
@@ -189,3 +254,5 @@ def main_customFields(typeOp,balanced):
 
 if __name__ == '__main__':
     main_customFields()
+
+

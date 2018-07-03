@@ -356,6 +356,44 @@ class MongoDBUtils(object):
 
     def getBioWithAge(self, collection):
         df = DataFrame(columns=('screen_name', 'age'))
+        count=0
+        db = self.mongo_client[MONGO_DB_NAME]
+        col = db[collection]
+        screen_names=""
+        for user in col.find({'age':{'$exists': False}}): #para cada unlabeled user
+            bio = user['description']
+
+            if user['lang'] == 'es' and isinstance(bio, unicode):
+                bio = bio.lower()
+
+                if bio.find(u'años')!= -1: 
+                    myre = re.compile(ur"(\d+)\s*años",re.UNICODE)
+
+                    match = re.search(myre, bio)
+                    if match:
+                        screen_name = user["screen_name"]
+                        age= int(match.group(1))
+                        if age > 9 and age < 100 and screen_name not in df.screen_name.values:
+                            if 10 <= age <= 17:
+                                ageRange = '10-17'
+                            if 18 <= age <= 24:
+                                ageRange = '18-24'
+                            elif 25 <= age <= 34:
+                                ageRange = '25-34'
+                            elif 35 <= age <= 49:
+                                ageRange = '35-49'
+                            elif 50 <= age <= 99:
+                                ageRange = '50-xx'
+                               
+                            print "guardando...",screen_name
+                            df.loc[count] = [screen_name,ageRange]
+ 
+                            col.update({'screen_name' : screen_name }, {'$set' : {'age' : ageRange }})                     
+        df.to_csv('labeledUsers.csv', index=False)
+
+
+    def getBioWithAge2(self, collection):
+        df = DataFrame(columns=('screen_name', 'age'))
         count = 0
         db = self.mongo_client[MONGO_DB_NAME]
         col = db[collection]
@@ -374,25 +412,14 @@ class MongoDBUtils(object):
                     match = re.search(myre, bio)
                     if match:
                         screen_name = user["screen_name"]
-                        age = int(match.group(1)) + (2018 - year)
-                        print "original " + match.group(1)  + "nueva " + str((int(match.group(1)) + (2018 - year)))
-                        if age > 9 and age < 100 and screen_name not in df.screen_name.values:
-                            if 10 <= age <= 17:
-                                ageRange = '10-17'
-                            if 18 <= age <= 24:
-                                ageRange = '18-24'
-                            elif 25 <= age <= 34:
-                                ageRange = '25-34'
-                            elif 35 <= age <= 49:
-                                ageRange = '35-49'
-                            elif 50 <= age <= 99:
-                                ageRange = '50-xx'
+                        age = int(match.group(1))
 
-                            print "guardando...", screen_name
-                            df.loc[count] = [screen_name, ageRange]
+                        print "guardando...", screen_name
+                        print "age: ", age
+                        df.loc[count] = [screen_name, age]
 
-                            col.update({'screen_name': screen_name}, {
-                                       '$set': {'age': ageRange}})
+                        col.update({'screen_name': screen_name}, {
+                                    '$set': {'age': age}})
         df.to_csv('labeledUsers.csv', index=False)
 
     def getUrlsFromBio(self, collection):
@@ -748,49 +775,48 @@ class MongoDBUtils(object):
             col = db[DB_COL_USERS]
             count = 0
 
-            for ageR in ageRanges:
-                for user in col.find({"age": ageR}).limit(59):
-                    tweetText = ""
-                    age = user['age']
+            for user in col.find({}).limit(59):
+                tweetText = ""
+                age = user['age']
 
-                    gender = 0
-                    if user['profile_pic_gender'] == 'male':
-                        gender = 1
-                    elif user['profile_pic_gender'] == 'female':
-                        gender = 2
+                gender = 0
+                if user['profile_pic_gender'] == 'male':
+                    gender = 1
+                elif user['profile_pic_gender'] == 'female':
+                    gender = 2
 
-                    snapchat = 0
-                    if user['snapchat'] == True:
-                        snapchat = 1
+                snapchat = 0
+                if user['snapchat'] == True:
+                    snapchat = 1
 
-                    instagram = 0
-                    if user['instagram'] == True:
-                        instagram = 1
+                instagram = 0
+                if user['instagram'] == True:
+                    instagram = 1
 
-                    facebook = 0
-                    if user['facebook'] == True:
-                        facebook = 1
+                facebook = 0
+                if user['facebook'] == True:
+                    facebook = 1
 
-                    linkedin = 0
-                    if user['linkedin'] == True:
-                        linkedin = 1
+                linkedin = 0
+                if user['linkedin'] == True:
+                    linkedin = 1
 
-                    for tweet in user['tweets']:
-                        cleanedTweet = re.sub(
-                            r"http\S+", "", tweet['full_text'])
-                        cleanedTweet = re.sub(
-                            r'@\w+', "", cleanedTweet).lower().replace("\n", "").replace("\r", "")
+                for tweet in user['tweets']:
+                    cleanedTweet = re.sub(
+                        r"http\S+", "", tweet['full_text'])
+                    cleanedTweet = re.sub(
+                        r'@\w+', "", cleanedTweet).lower().replace("\n", "").replace("\r", "")
 
-                        if tweetText == "":
-                            tweetText = cleanedTweet.encode('utf-8')
-                        else:
-                            tweetText = tweetText + '. ' + \
-                                cleanedTweet.encode('utf-8')
+                    if tweetText == "":
+                        tweetText = cleanedTweet.encode('utf-8')
+                    else:
+                        tweetText = tweetText + '. ' + \
+                            cleanedTweet.encode('utf-8')
 
-                    df.loc[count] = [user['screen_name'], user['friends_count'], user['statuses_count'], linkedin, snapchat, instagram, facebook, user['followers_count'],
-                                     user['favourites_count'], user['qtyMentions'], user['qtyHashtags'], user['qtyUrls'], user['qtyEmojis'], user['qtyUppercase'], gender, tweetText, age]
+                df.loc[count] = [user['screen_name'], user['friends_count'], user['statuses_count'], linkedin, snapchat, instagram, facebook, user['followers_count'],
+                                    user['favourites_count'], user['qtyMentions'], user['qtyHashtags'], user['qtyUrls'], user['qtyEmojis'], user['qtyUppercase'], gender, tweetText, age]
 
-                    count += 1
+                count += 1
 
             # Split into training and test set
             # 80% of the input for training and 20% for testing

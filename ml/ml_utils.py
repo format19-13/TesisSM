@@ -75,6 +75,15 @@ def plot_confusion_matrix(cm, classes,normalize,title,cmap=plt.cm.Blues):
     plt.ylabel('True label')
     plt.xlabel('Predicted label')
 
+def plotProba(clf, feature_group, mlAlgorithm, outdir,test_data_features):
+    prob_pos_clf = clf.predict_proba(test_data_features)[:, 1]
+    order = np.lexsort((prob_pos_clf, ))
+    plt.gcf().clear()
+    plt.plot(prob_pos_clf[order], 'r', label='No calibration ')
+    outname = feature_group + mlAlgorithm +'_probabilityDistribution.png'
+    fullname = os.path.join(outdir, outname)    
+    plt.savefig(fullname)	
+
 def createConfusionMatrix(y_true,y_pred,classes,className,mlAlgorithm,outdir):
     cnf_matrix =confusion_matrix(y_true, y_pred)
 

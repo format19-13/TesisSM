@@ -1,6 +1,6 @@
 MONGO_DB_HOST = u'127.0.0.1'
 MONGO_DB_PORT = 27017
-MONGO_DB_NAME = u'tesis_original'
+MONGO_DB_NAME = u'tesis2'
 MONGO_DB_USER = u'root'
 MONGO_DB_PASSWORD = u'password'
 DB_COL_TWEETS = u'tweets'

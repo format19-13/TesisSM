@@ -22,6 +22,10 @@ from nlp_features.customStopwords import getCustomStopwords
 
 from sklearn.metrics import accuracy_score,make_scorer,classification_report
 from sklearn.model_selection import cross_val_score,StratifiedKFold
+from sklearn import metrics
+from math import sqrt
+
+
 
 def main_tweetNgrams(typeOp,balanced):
 	
@@ -29,12 +33,8 @@ def main_tweetNgrams(typeOp,balanced):
 		train_data=pd.read_csv(DATASET_PATH+"/tweets_balanced_train.csv", sep=",",dtype=str)[['screen_name','tweets','age']]
 		test_data=pd.read_csv(DATASET_PATH+"/tweets_balanced_test.csv", sep=",",dtype=str)[['screen_name','tweets','age']]
 	else:
-		#train_data=pd.read_csv(DATASET_PATH+"/"+typeOp+"_tweets_train.csv", sep=",",dtype=str)[['screen_name','tweets','age']]
-		#test_data=pd.read_csv(DATASET_PATH+"/"+typeOp+"_tweets_test.csv", sep=",",dtype=str)[['screen_name','tweets','age']]
-
-		#EXPERIMENT 4
-		train_data=pd.read_csv(DATASET_PATH+"/"+typeOp+"_faceAPI_tweets_train.csv", sep=",",dtype=str)[['screen_name','tweets','age']]
-		test_data=pd.read_csv(DATASET_PATH+"/"+typeOp+"_faceAPI_tweets_test.csv", sep=",",dtype=str)[['screen_name','tweets','age']]
+		train_data=pd.read_csv(DATASET_PATH+"/"+typeOp+"_tweets_train.csv", sep=",",dtype=str)[['screen_name','tweets','age']]
+		test_data=pd.read_csv(DATASET_PATH+"/"+typeOp+"_tweets_test.csv", sep=",",dtype=str)[['screen_name','tweets','age']]
 
 	# Show the number of observations for the test and training dataframes
 	print 'Number of observations in the training data:', len(train_data)
@@ -101,7 +101,7 @@ def main_tweetNgrams(typeOp,balanced):
 	forest = RandomForestClassifier(n_estimators = 160, max_depth=20,min_samples_leaf=3) 
 	# Fit the forest to the training set, using the bag of)
 
-	svm = SVC(kernel='rbf', C=10, gamma= 0.1)
+	svm = SVC(kernel='rbf', C=10, gamma= 0.1,probability=True)
 
 	sgd = SGDClassifier(loss='log', penalty='l2', random_state=42, alpha=0.0001,n_iter=60)
 
@@ -109,15 +109,13 @@ def main_tweetNgrams(typeOp,balanced):
 	# Fit the forest to the training set, using the bag of words as 
 	# features and the age range as the response variable
 
-	#forest = forest.fit( train_data_features, train_data["age"] ) 
+	forest = forest.fit( train_data_features, train_data["age"] ) 
 
-	#bayes = bayes.fit( train_data_features, train_data["age"] ) 
+	bayes = bayes.fit( train_data_features, train_data["age"] ) 
 
-	#svm = svm.fit(train_data_features, train_data["age"] ) 
+	svm = svm.fit(train_data_features, train_data["age"] ) 
 
-	#sgd= sgd.fit(train_data_features, train_data["age"] ) 
-
-	regr = regr.fit(train_data_features, train_data["age"])
+	sgd= sgd.fit(train_data_features, train_data["age"] ) 
 	
 	# Read the test data
 
@@ -125,17 +123,31 @@ def main_tweetNgrams(typeOp,balanced):
 	test_data_features = transformer_tfidf.transform(test_data.tweets)
 	test_data_features = test_data_features.toarray()
 
+	#train_filtered_data = train_data[pd.to_numeric(train_data.age, errors='coerce').notnull()]
+	
+	#tfidf_filtered = transformer_tfidf.fit_transform(train_filtered_data.tweets)
+
+	#train_data_features_filtered = tfidf_filtered.toarray()
+
+	#regr = regr.fit(train_data_features_filtered, train_filtered_data["age"])
+
 	# Use the random forest to make age range predictions
-	#resultForest = forest.predict(test_data_features)
+	resultForest = forest.predict(test_data_features)
 
-	#resultBayes = bayes.predict(test_data_features)
-	#print "resultbayes: ", resultBayes
+	resultBayes = bayes.predict(test_data_features)
+	print "resultbayes: ", resultBayes
 
-	#resultSVM= svm.predict(test_data_features)
+	resultSVM= svm.predict(test_data_features)
 
-	#resultSGD= sgd.predict(test_data_features)
+	resultSGD= sgd.predict(test_data_features)
 
-	resultLR = regr.predict(test_data_features)
+	#test_filtered_data = test_data[pd.to_numeric(test_data.age, errors='coerce').notnull()]
+	
+	#tfidf_filtered_train = transformer_tfidf.fit_transform(test_filtered_data.tweets)
+
+	#test_data_features_filtered = tfidf_filtered_train.toarray()
+
+	#resultLR = regr.predict(test_data_features_filtered)
 
 	outdir =time.strftime("%d-%m-%Y")
 	
@@ -152,7 +164,7 @@ def main_tweetNgrams(typeOp,balanced):
 	# Use pandas to write the comma-separated output file
 	outname = 'tweets_ngrams_results.csv'
 	fullname = os.path.join(outdir, outname)    
-	output.to_csv(fullname,index=False)
+	#output.to_csv(fullname,index=False)
 
 
 	###################################
@@ -180,47 +192,57 @@ def main_tweetNgrams(typeOp,balanced):
    	#--------------
 	##BAYES
 	#--------------
-	#print "Metrics for Naive Bayes:"
-	#ml_utils.createConfusionMatrix(test_data['age'].tolist(),resultBayes,ageRanges,name_prefix,'NaiveBayes',outdir)
-	#print classification_report(test_data['age'].tolist(), resultBayes, target_names=target_names)
-
-	#scores = cross_val_score(bayes, data, y_complete, cv=StratifiedKFold(n_splits=10, shuffle=True, random_state = 5),scoring=make_scorer(accuracy_score))
-	#accuracyNB = round(scores.mean(),2)	
-	#print "10-Fold Accuracy: ", accuracyNB
+	print "Metrics for Naive Bayes:"
+	ml_utils.createConfusionMatrix(test_data['age'].tolist(),resultBayes,ageRanges,name_prefix,'NaiveBayes',outdir)
+	print classification_report(test_data['age'].tolist(), resultBayes, target_names=target_names)
+	ml_utils.plotProba(bayes,"tweet_ngrams", "bayes", outdir, test_data_features)
+	scores = cross_val_score(bayes, data, y_complete, cv=StratifiedKFold(n_splits=10, shuffle=True, random_state = 5),scoring=make_scorer(accuracy_score))
+	accuracyNB = round(scores.mean(),2)	
+	print "10-Fold Accuracy: ", accuracyNB
 
 	#--------------
 	##RANDOM FOREST
 	#--------------
-	#print "Metrics for Random Forest:"
-	#ml_utils.createConfusionMatrix(test_data['age'].tolist(),resultForest,ageRanges,name_prefix,'RandomForest',outdir)
-	#print classification_report(test_data['age'].tolist(), resultForest, target_names=target_names)
-	
-	#scores = cross_val_score(forest, data, y_complete, cv=StratifiedKFold(n_splits=10, shuffle=True, random_state = 5),scoring=make_scorer(accuracy_score))
-	#accuracyRF = round(scores.mean(),2)	
-	#print "10-Fold Accuracy: ", accuracyRF 
+	print "Metrics for Random Forest:"
+	ml_utils.createConfusionMatrix(test_data['age'].tolist(),resultForest,ageRanges,name_prefix,'RandomForest',outdir)
+	print classification_report(test_data['age'].tolist(), resultForest, target_names=target_names)
+	scores = cross_val_score(forest, data, y_complete, cv=StratifiedKFold(n_splits=10, shuffle=True, random_state = 5),scoring=make_scorer(accuracy_score))
+	accuracyRF = round(scores.mean(),2)	
+	ml_utils.plotProba(forest,"tweet_ngrams", "forest", outdir, test_data_features)
+	print "10-Fold Accuracy: ", accuracyRF 
 
 	#--------------
 	##SVM
 	#--------------
-	#print "Metrics for SVM:"
-	#ml_utils.createConfusionMatrix(test_data['age'].tolist(),resultSVM,ageRanges,name_prefix,'SVM',outdir)
-	#print classification_report(test_data['age'].tolist(), resultSVM, target_names=target_names)
-	
-	#scores = cross_val_score(svm, data, y_complete, cv=StratifiedKFold(n_splits=10, shuffle=True, random_state = 5),scoring=make_scorer(accuracy_score))
-	#accuracySVM = round(scores.mean(),2)	
-	#print "10-Fold Accuracy: ", accuracySVM
+	print "Metrics for SVM:"
+	ml_utils.createConfusionMatrix(test_data['age'].tolist(),resultSVM,ageRanges,name_prefix,'SVM',outdir)
+	print classification_report(test_data['age'].tolist(), resultSVM, target_names=target_names)
+	ml_utils.plotProba(svm,"tweet_ngrams", "svm", outdir, test_data_features)
+	scores = cross_val_score(svm, data, y_complete, cv=StratifiedKFold(n_splits=10, shuffle=True, random_state = 5),scoring=make_scorer(accuracy_score))
+	accuracySVM = round(scores.mean(),2)	
+	print "10-Fold Accuracy: ", accuracySVM
 
 	#--------------
 	##SGD
 	#--------------
-	#print "Metrics for SGD:"
-	#ml_utils.createConfusionMatrix(test_data['age'].tolist(),resultSGD,ageRanges,name_prefix,'SGD',outdir)
-	#print classification_report(test_data['age'].tolist(), resultSGD, target_names=target_names)
+	print "Metrics for SGD:"
+	ml_utils.createConfusionMatrix(test_data['age'].tolist(),resultSGD,ageRanges,name_prefix,'SGD',outdir)
+	print classification_report(test_data['age'].tolist(), resultSGD, target_names=target_names)
+	ml_utils.plotProba(sgd,"tweet_ngrams", "sgd", outdir, test_data_features)
+	scores = cross_val_score(sgd, data, y_complete, cv=StratifiedKFold(n_splits=10, shuffle=True, random_state = 5),scoring=make_scorer(accuracy_score))
+	accuracySGD = round(scores.mean(),2)	
+	print "10-Fold Accuracy: ", accuracySGD 
 
-	#scores = cross_val_score(sgd, data, y_complete, cv=StratifiedKFold(n_splits=10, shuffle=True, random_state = 5),scoring=make_scorer(accuracy_score))
-	#accuracySGD = round(scores.mean(),2)	
-	#print "10-Fold Accuracy: ", accuracySGD 
+	#--------------
+	##LR
+	#--------------
+	#print "Metrics for Lr:"]
 
+	#print "LR, MEAN ABSOLUTE ERROR: ", metrics.mean_absolute_error(map(int,test_filtered_data['age'].tolist()),resultLR)
+
+	#print "LR, MEAN SQUARE ERROR: ", metrics.mean_squared_error(map(int,test_filtered_data['age'].tolist()),resultLR)
+
+	#print "LR, RMSE: ", sqrt(metrics.mean_squared_error(map(int,test_filtered_data['age'].tolist()),resultLR))
 
 
 	#--------------

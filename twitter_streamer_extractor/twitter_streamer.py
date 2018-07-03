@@ -121,8 +121,6 @@ class TwitterStreamer(TwythonStreamer):
                 self.module_logger.debug(traceback.format_exc())
                 self.module_logger.debug("Resetting streamer...")
             except Exception as e:
-                self.module_logger.rollback()
-                self.module_logger.close()
                 msg = "Unexpected error in execution of the search track processor. " + str(e)
                 self.module_logger.debug(msg)
                 self.module_logger.debug(traceback.format_exc())

@@ -5,10 +5,10 @@ sys.path.append(os.path.abspath(os.pardir))
 
 from enum import Enum
 
-DIR_PREFIX="/home/marce"
-DATASET_PATH="/home/marce/Code/TesisSM/datasets"
-ML_PATH="/home/marce/Code/TesisSM/ml"
-NLP_PATH="/home/marce/Code/TesisSM/nlp_features"
+DIR_PREFIX="/Users/sagal/Code/TesisSM"
+DATASET_PATH="/Users/sagal/Code/TesisSM/datasets"
+ML_PATH="/Users/sagal/Code/TesisSM/ml"
+NLP_PATH="/Users/sagal/Code/TesisSM/nlp_features"
 
 ############################
 # LOGGER

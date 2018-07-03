@@ -26,12 +26,12 @@ def runMLAlgorithms(typeOp, balancedFlag):
 	print "Ejecutando ml para custom fields"
 	print "#################################"
 
-	accCustomFields = 0#main_customFields(typeOp,balancedFlag)
+	accCustomFields = main_customFields(typeOp,balancedFlag)
 
 	print "########################################"
 	print "Ejecutando ml para tweetNgrams sobre tweets"
 	print "########################################"
-	accTweetNgrams = main_tweetNgrams(typeOp,balancedFlag)
+	accTweetNgrams = 0#main_tweetNgrams(typeOp,balancedFlag)
 
 	print "##############################################################"
 	print "Ejecutando ml para tweetNgramsAndCustomFields sobre tweets"
