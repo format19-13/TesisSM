@@ -53,7 +53,7 @@ def preprocess():
     typeOp = 'normal'
     x_text = pd.read_csv(DATASET_PATH+"/"+typeOp+"_tweets_train.csv", sep=",",dtype=str).tweets
     y = pd.read_csv(DATASET_PATH+"/"+typeOp+"_tweets_train.csv", sep=",",dtype=str).age
-
+    
     # Build vocabulary
     max_document_length = max([len(x.split(" ")) for x in x_text])
     vocab_processor = learn.preprocessing.VocabularyProcessor(max_document_length)
@@ -75,10 +75,16 @@ def preprocess():
 
     print("Vocabulary Size: {:d}".format(len(vocab_processor.vocabulary_)))
     print("Train/Dev split: {:d}/{:d}".format(len(y_train), len(y_dev)))
+    from sklearn.preprocessing import LabelEncoder, OneHotEncoder
+    encoder_x=OneHotEncoder(sparse=False)
+    encoder_label = LabelEncoder()
+    y_train = encoder_label.fit_transform(y_train)
+    y_train = y_train.reshape(-1, 1)
+    y_train= encoder_x.fit_transform(y_train)
     print x_train
-    print x_train.shape
     print y_train
-    print y_train.shape
+
+ 
     return x_train, y_train, vocab_processor, x_dev, y_dev
 
 def train(x_train, y_train, vocab_processor, x_dev, y_dev):
@@ -141,7 +147,7 @@ def train(x_train, y_train, vocab_processor, x_dev, y_dev):
             if not os.path.exists(checkpoint_dir):
                 os.makedirs(checkpoint_dir)
             saver = tf.train.Saver(tf.global_variables(), max_to_keep=FLAGS.num_checkpoints)
-            "print write vocab"
+            print "print write vocab"
             # Write vocabulary
             vocab_processor.save(os.path.join(out_dir, "vocab"))
 
@@ -152,6 +158,8 @@ def train(x_train, y_train, vocab_processor, x_dev, y_dev):
                 """
                 A single training step
                 """
+                print x_batch
+                print y_batch
                 feed_dict = {
                   cnn.input_x: x_batch,
                   cnn.input_y: y_batch,
@@ -173,6 +181,7 @@ def train(x_train, y_train, vocab_processor, x_dev, y_dev):
                   cnn.input_y: y_batch,
                   cnn.dropout_keep_prob: 1.0
                 }
+                print "aca y", y_batch
                 step, summaries, loss, accuracy = sess.run(
                     [global_step, dev_summary_op, cnn.loss, cnn.accuracy],
                     feed_dict)
@@ -186,6 +195,7 @@ def train(x_train, y_train, vocab_processor, x_dev, y_dev):
                 list(zip(x_train, y_train)), FLAGS.batch_size, FLAGS.num_epochs)
             # Training loop. For each batch...
             for batch in batches:
+                print "hola for"
                 x_batch, y_batch = zip(*batch)
                 train_step(x_batch, y_batch)
                 current_step = tf.train.global_step(sess, global_step)
