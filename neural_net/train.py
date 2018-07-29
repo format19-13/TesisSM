@@ -8,6 +8,8 @@ from text_cnn import TextCNN
 from tensorflow.contrib import learn
 import os, sys
 import pandas as pd
+import pickle
+import argparse
 
 sys.path.append(os.path.abspath(os.pardir))
 from configs.settings import *
@@ -21,22 +23,27 @@ tf.flags.DEFINE_string("positive_data_file", "./data/rt-polaritydata/rt-polarity
 tf.flags.DEFINE_string("negative_data_file", "./data/rt-polaritydata/rt-polarity.neg", "Data source for the negative data.")
 
 # Model Hyperparameters
-tf.flags.DEFINE_integer("embedding_dim", 128, "Dimensionality of character embedding (default: 128)")
+tf.flags.DEFINE_integer("embedding_dim", 300, "Dimensionality of character embedding (default: 128)")
 tf.flags.DEFINE_string("filter_sizes", "3,4,5", "Comma-separated filter sizes (default: '3,4,5')")
 tf.flags.DEFINE_integer("num_filters", 128, "Number of filters per filter size (default: 128)")
-tf.flags.DEFINE_float("dropout_keep_prob", 0.5, "Dropout keep probability (default: 0.5)")
-tf.flags.DEFINE_float("l2_reg_lambda", 0.0, "L2 regularization lambda (default: 0.0)")
+tf.flags.DEFINE_float("dropout_keep_prob", 0.8, "Dropout keep probability (default: 0.5)")
+tf.flags.DEFINE_float("l2_reg_lambda", 0.1, "L2 regularization lambda (default: 0.0)")
 
 # Training parameters
-tf.flags.DEFINE_integer("batch_size", 64, "Batch Size (default: 64)")
+tf.flags.DEFINE_integer("batch_size", 8, "Batch Size (default: 64)")
 tf.flags.DEFINE_integer("num_epochs", 200, "Number of training epochs (default: 200)")
 tf.flags.DEFINE_integer("evaluate_every", 100, "Evaluate model on dev set after this many steps (default: 100)")
-tf.flags.DEFINE_integer("checkpoint_every", 100, "Save model after this many steps (default: 100)")
+tf.flags.DEFINE_integer("checkpoint_every", 50, "Save model after this many steps (default: 100)")
 tf.flags.DEFINE_integer("num_checkpoints", 5, "Number of checkpoints to store (default: 5)")
 # Misc Parameters
 tf.flags.DEFINE_boolean("allow_soft_placement", True, "Allow device soft device placement")
 tf.flags.DEFINE_boolean("log_device_placement", False, "Log placement of ops on devices")
 
+tf.flags.DEFINE_integer(
+    'fasttext_embedding_dim', 300,
+    'Dimensionality of fasttext word vector (default: 300)')
+vocab_size = 0
+embedding = None
 FLAGS = tf.flags.FLAGS
 # FLAGS._parse_flags()
 # print("\nParameters:")
@@ -53,11 +60,27 @@ def preprocess():
     typeOp = 'normal'
     x_text = pd.read_csv(DATASET_PATH+"/"+typeOp+"_tweets_train.csv", sep=",",dtype=str).tweets
     y = pd.read_csv(DATASET_PATH+"/"+typeOp+"_tweets_train.csv", sep=",",dtype=str).age
-    
+    from sklearn.preprocessing import LabelEncoder, OneHotEncoder
+    encoder_x=OneHotEncoder(sparse=False)
+    encoder_label = LabelEncoder()
+    y = encoder_label.fit_transform(y)
+    y = y.reshape(-1, 1)
+    y= encoder_x.fit_transform(y)
     # Build vocabulary
+    
     max_document_length = max([len(x.split(" ")) for x in x_text])
     vocab_processor = learn.preprocessing.VocabularyProcessor(max_document_length)
-    x = np.array(list(vocab_processor.fit_transform(x_text)))
+    with open('fasttext_vocab_es.dat', 'rb') as fr:
+        vocab = pickle.load(fr)
+    global embedding    
+    embedding = np.load('fasttext_embedding_es.npy')
+
+    pretrain = vocab_processor.fit(vocab.keys())
+    x = np.array(list(vocab_processor.transform(x_text)))
+
+    embedding_size = FLAGS.fasttext_embedding_dim
+    global vocab_size
+    vocab_size = len(vocab)
     print "build vocabulary"
     # Randomly shuffle data
     np.random.seed(10)
@@ -75,12 +98,6 @@ def preprocess():
 
     print("Vocabulary Size: {:d}".format(len(vocab_processor.vocabulary_)))
     print("Train/Dev split: {:d}/{:d}".format(len(y_train), len(y_dev)))
-    from sklearn.preprocessing import LabelEncoder, OneHotEncoder
-    encoder_x=OneHotEncoder(sparse=False)
-    encoder_label = LabelEncoder()
-    y_train = encoder_label.fit_transform(y_train)
-    y_train = y_train.reshape(-1, 1)
-    y_train= encoder_x.fit_transform(y_train)
     print x_train
     print y_train
 
@@ -100,11 +117,12 @@ def train(x_train, y_train, vocab_processor, x_dev, y_dev):
             cnn = TextCNN(
                 sequence_length=x_train.shape[1],
                 num_classes=5,
-                vocab_size=len(vocab_processor.vocabulary_),
+                vocab_size=vocab_size,
                 embedding_size=FLAGS.embedding_dim,
                 filter_sizes=list(map(int, FLAGS.filter_sizes.split(","))),
                 num_filters=FLAGS.num_filters,
-                l2_reg_lambda=FLAGS.l2_reg_lambda)
+                l2_reg_lambda=FLAGS.l2_reg_lambda,
+                pre_trained=True)
             print "define training"
             # Define Training procedure
             global_step = tf.Variable(0, name="global_step", trainable=False)
@@ -163,7 +181,8 @@ def train(x_train, y_train, vocab_processor, x_dev, y_dev):
                 feed_dict = {
                   cnn.input_x: x_batch,
                   cnn.input_y: y_batch,
-                  cnn.dropout_keep_prob: FLAGS.dropout_keep_prob
+                  cnn.dropout_keep_prob: FLAGS.dropout_keep_prob,
+                  cnn.embedding_placeholder: embedding
                 }
                 _, step, summaries, loss, accuracy = sess.run(
                     [train_op, global_step, train_summary_op, cnn.loss, cnn.accuracy],
@@ -179,7 +198,8 @@ def train(x_train, y_train, vocab_processor, x_dev, y_dev):
                 feed_dict = {
                   cnn.input_x: x_batch,
                   cnn.input_y: y_batch,
-                  cnn.dropout_keep_prob: 1.0
+                  cnn.dropout_keep_prob: 1.0,
+                  cnn.embedding_placeholder: embedding
                 }
                 print "aca y", y_batch
                 step, summaries, loss, accuracy = sess.run(
@@ -193,9 +213,13 @@ def train(x_train, y_train, vocab_processor, x_dev, y_dev):
             # Generate batches
             batches = data_helpers.batch_iter(
                 list(zip(x_train, y_train)), FLAGS.batch_size, FLAGS.num_epochs)
+            #checkpoint_directory = "/Users/sagal/Code/TesisSM/neural_net/runs/1531201344/checkpoints"
+            #print checkpoint_directory
+            #checkpoint_file=tf.train.latest_checkpoint(checkpoint_directory)
+            #saver.restore(sess, checkpoint_file)
+            #print "checkpoint restored"
             # Training loop. For each batch...
             for batch in batches:
-                print "hola for"
                 x_batch, y_batch = zip(*batch)
                 train_step(x_batch, y_batch)
                 current_step = tf.train.global_step(sess, global_step)
